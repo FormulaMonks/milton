@@ -1,5 +1,5 @@
 module Citrusbyte
-  module Milton
+  module Milton    
     module IsResizeable
       def self.included(base)
         base.extend IsMethods
@@ -9,82 +9,54 @@ module Citrusbyte
         def is_resizeable(options={})
           raise "is_resizeable requires a content_type column on #{class_name} table" unless column_names.include?("content_type")
           
-          options[:size] ||= {}
-          
           ensure_attachment_methods options
 
-          class_inheritable_accessor :resizeable_options
-          self.resizeable_options = options
+          ResizeableFile.options = AttachableFile.options.merge(options)
           
-          attr_accessor :thumbnail_resize_options
-
           extend  Citrusbyte::Milton::IsResizeable::ClassMethods
           include Citrusbyte::Milton::IsResizeable::InstanceMethods
-          
-          alias_method_chain :full_filename, :resizing
         end
       end
 
       module ClassMethods
-        def parse_size(size)
-          case size.class.to_s
-          when "Fixnum" then [size.to_i, size.to_i]
-          when "Array"  then size
-          when "String" then size.split('x').collect {|a| a.to_i}
-          end
-        end
       end
 
       module InstanceMethods
-        def image_filename(options={})
-          full_filename(options).gsub(/.*public\/images/, '')
+        # Returns the content_type of this attachment, tries to determine it if
+        # hasn't been determined yet or is not saved to the database
+        def content_type
+          return self[:content_type] unless self[:content_type].blank?
+          self.content_type = file_reference.mime_type? if file_reference.respond_to?(:mime_type?)
         end
-
-        def full_filename_with_resizing(options={})
-          return full_filename_without_resizing if options.empty?
-          filename = derivative_filename(options)
-          resize(filename, options) unless File.exists?(filename)
-          filename
+                
+        # Sets the content type to the given type
+        def content_type=(type)
+          write_attribute :content_type, type.to_s.strip
         end
         
         protected
-          # For speed, any derivatives less than 640-wide are made from a 
-          # 640-wide version of the image (so you're not generating tiny
-          # thumbnails from an 8-megapixel upload)
-          def presize_options(options)
-            self.width > 640 && options[:size].split('x').first.to_i < 640 ? { :size => '640x' } : {}
-          end
-        
-          def resize(filename, options)
-            raise "target size must be specified for resizing" unless options.has_key?(:size)
-
-            if options[:crop]
-              crop = CropCalculator.new(self, options[:size])
-              options[:size] = crop.resizing_geometry
-              conversion_options = %Q(-gravity #{crop.gravity} -crop #{crop.cropping_geometry})
-            end
-
-            system %Q(convert -geometry #{options[:size]} "#{full_filename(presize_options(options))}" #{conversion_options || ''} +repage "#{filename}").gsub(/\s+/, " ")
+          def attached_file
+            @attached_file ||= ResizeableFile.new(self, filename)
           end
       end
-    
+        
       class Image
         attr_accessor :width
         attr_accessor :height
 
         class << self
-          def from_filename(filename)
-            new($1, $2) if `identify #{self.filename}` =~ /.*? (\d+)x(\d+)\+\d+\+\d+/
+          def from_path(path)
+            new($1, $2) if `identify #{path}` =~ /.*? (\d+)x(\d+)\+\d+\+\d+/
           end
 
           def from_geometry(geometry)
-            new(*(string.split("x").collect{ |side| side.to_i }))
+            new(*(geometry.split("x").collect(&:to_i)))
           end
         end
 
         def initialize(width=nil, height=nil)
-          @width  = width
-          @height = height
+          @width  = width.to_i
+          @height = height.to_i
         end
 
         def larger_dimension
@@ -98,7 +70,7 @@ module Citrusbyte
         def square?
           width == height
         end
-      end    
+      end
     
       class CropCalculator
         attr_reader :original, :target
@@ -112,17 +84,17 @@ module Citrusbyte
           case
             when original.wider? then "#{resized_width}x#{target.height}"
             when original.square? && target.wider? then "#{target.width}x#{resized_height}"
-            when original.square? && !target.wider? then "#{resized_width}x#{target_height}"
-            else "#{target_width}x#{resized_height}"
+            when original.square? && !target.wider? then "#{resized_width}x#{target.height}"
+            else "#{target.width}x#{resized_height}"
           end
         end
 
         def cropping_geometry
-          "#{original.width}x#{original.height}+0+0"
+          "#{target.width}x#{target.height}+0+0"
         end
 
         def gravity
-          image.wider? ? "center" : "north"
+          original.wider? ? "center" : "north"
         end
 
         private
@@ -149,6 +121,59 @@ module Citrusbyte
           #   self.temp_path = write_to_temp_file(cropped_img.to_blob)
           # end
       end
+    end
+    
+    class ResizeableFile < AttachableFile
+      class << self
+        def parse_size(size)
+          case size.class.to_s
+          when "Fixnum" then [size.to_i, size.to_i]
+          when "Array"  then size
+          when "String" then size.split('x').collect(&:to_i)
+          end
+        end
+      end
+      
+      def initialize(attachment, filename)
+        super attachment, filename
+      end
+      
+      def image_path(options={})
+        path.gsub(/.*public\/images/, '')
+      end
+
+      def path(options={})
+        options = Derivative.options_from(options) if options.is_a?(String)
+        return super if options.empty?
+        
+        derivative = Derivative.new(self, options)
+        resize(derivative) unless derivative.exists?
+        derivative.path
+      end
+      
+      protected
+        # For speed, any derivatives less than 640-wide are made from a 
+        # 640-wide version of the image (so you're not generating tiny
+        # thumbnails from an 8-megapixel upload)
+        def presize_options(derivative)
+          image.width > 640 && IsResizeable::Image.from_geometry(derivative.options[:size]).width < 640 ? { :size => '640x' } : {}
+        end
+      
+        def image
+          @image ||= IsResizeable::Image.from_path(path)
+        end
+      
+        def resize(derivative)
+          raise "target size must be specified for resizing" unless derivative.options.has_key?(:size)
+          
+          if derivative.options[:crop]
+            crop = IsResizeable::CropCalculator.new(image, IsResizeable::Image.from_geometry(derivative.options[:size]))
+            size = crop.resizing_geometry
+            conversion_options = %Q(-gravity #{crop.gravity} -crop #{crop.cropping_geometry})
+          end
+
+          system %Q(convert -geometry #{size || derivative.options[:size]} #{ResizeableFile.new(@attachment, @attachment.filename).path(presize_options(derivative))} #{conversion_options || ''} +repage "#{derivative.path}")
+        end
     end
   end
 end

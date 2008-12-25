@@ -32,4 +32,15 @@ describe Attachment do
       Asset.create(:file => upload('file.foo', 'application/foo')).file_type.should eql(foo)
     end
   end
+  
+  describe "destroying" do
+    before :each do
+    end
+
+    it "should delete the underlying file from the filesystem" do
+    end
+    
+    it "should delete the derivative folder from the filesystem" do
+    end
+  end  
 end

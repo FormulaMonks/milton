@@ -1,65 +1,122 @@
 require File.dirname(__FILE__) + '/../spec_helper'
 
 describe Citrusbyte::Milton::IsResizeable do
-  # before do
-  #   @bad_columns = ['one', 'two', 'filename']
-  #   @good_columns = @bad_columns.dup.push('content_type')
-  #   UploadableTestModel.stub!(:column_names).and_return(@good_columns)
-  # end
-  # 
-  # describe "content_type column" do
-  #   it "should raise an exception if there is no content_type column" do
-  #     UploadableTestModel.stub!(:column_names).and_return(@bad_columns)
-  #     lambda {
-  #       UploadableTestModel.class_eval("acts_as_resizeable")
-  #     }.should raise_error
-  #   end
-  # 
-  #   it 'should not raise an exception if there is a content_type column' do
-  #     UploadableTestModel.stub!(:column_names).and_return(@good_columns)
-  #     lambda {
-  #       UploadableTestModel.class_eval("acts_as_resizeable")
-  #     }.should_not raise_error
-  #   end
-  # end
-  # 
-  # describe "options" do
-  #   before do
-  #     UploadableTestModel.class_eval("acts_as_resizeable")
-  #   end
-  #   
-  #   def options
-  #     UploadableTestModel.resizeable_options
-  #   end
-  #   
-  #   it "should allow options to be accessed in resizeable_options" do
-  #     UploadableTestModel.resizeable_options.should be_kind_of(Hash)
-  #   end
-  #   
-  #   it "should set an initial size of an empty hash" do
-  #     options[:size].size.should eql(0)
-  #   end
-  #   
-  #   it "should set the initial file path to root public then table name" do
-  #     options[:file_system_path].should eql(File.join(RAILS_ROOT, "public", UploadableTestModel.table_name)[1..-1])
-  #   end
-  # end
-  # 
-  # describe "additional class methods" do
-  #   it "should have a get_size_from_parameter method" do
-  #     UploadableTestModel.should respond_to(:get_size_from_parameter)
-  #   end
-  #   
-  #   it "should have get_size_from_parameter convert a fixnum to a 2 element size array" do
-  #     UploadableTestModel.get_size_from_parameter(50).should eql([50, 50])
-  #   end
-  #   
-  #   it "should have get_size_from_parameter leave an array alone" do
-  #     UploadableTestModel.get_size_from_parameter([50]).should eql([50])
-  #   end
-  #   
-  #   it "should have get_size_from_parameter convert a string to size dimensions" do
-  #     UploadableTestModel.get_size_from_parameter("50x20").should eql([50, 20])
-  #   end
-  # end
+  describe "building the filename from options" do
+    before :each do
+      @image = Image.create :file => upload('milton.jpg')
+    end
+
+    describe "options as hash" do
+      it "should coalesce size into filename" do
+        File.basename(@image.path(:size => '40x40')).should eql('milton.size=40x40.jpg')
+      end
+
+      it "should raise unless a size is given" do
+        lambda {
+          File.basename(@image.path(:crop => true))
+        }.should raise_error
+      end
+
+      it "should coalesce crop into filename" do
+        File.basename(@image.path(:size => '40x40', :crop => true)).should eql('milton.crop=true_size=40x40.jpg')
+      end
+
+      it "should coalesce gravity into filename" do
+        File.basename(@image.path(:size => '40x40', :gravity => 'north')).should eql('milton.gravity=north_size=40x40.jpg')
+      end
+
+      it "should coalese all options together" do
+        File.basename(@image.path(:size => '40x40', :gravity => 'north', :crop => true)).should eql('milton.crop=true_gravity=north_size=40x40.jpg')
+      end
+    end
+    
+    describe "options as string" do
+      it "should parse size" do
+        File.basename(@image.path('size=40x40')).should eql('milton.size=40x40.jpg')
+      end
+
+      it "should parse crop" do
+        File.basename(@image.path('size=40x40_crop=true')).should eql('milton.crop=true_size=40x40.jpg')
+      end
+
+      it "should parse gravity" do
+        File.basename(@image.path('size=40x40_gravity=north')).should eql('milton.gravity=north_size=40x40.jpg')
+      end
+
+      it "should parse them all together" do
+        File.basename(@image.path('size=40x40_crop=true_gravity=north')).should eql('milton.crop=true_gravity=north_size=40x40.jpg')
+      end
+    end
+  end
+
+  # milton.jpg is 320x300
+  describe "resizing" do
+    before :each do
+      @image = Image.create :file => upload('milton.jpg')
+    end
+
+    describe "when cropped" do
+      before :each do
+        @info = Citrusbyte::Milton::IsResizeable::Image.from_path(@image.reload.path(:size => '50x50', :crop => true))
+      end
+      
+      it "should have width of 50px" do
+        @info.width.should eql(50)
+      end
+
+      it "should have height of 50px" do
+        @info.height.should eql(50)
+      end
+    end
+    
+    # 300/320   = 0.9375
+    # 50*0.9375 = 47
+    describe "when not cropped" do
+      before :each do
+        @info = Citrusbyte::Milton::IsResizeable::Image.from_path(@image.reload.path(:size => '50x50'))
+      end
+
+      it "should have width of 47px" do
+        @info.width.should eql(47)
+      end
+
+      it "should have height of 50px" do
+        @info.height.should eql(50)
+      end
+    end    
+  end
+
+  describe "smarter thumbnails" do
+    before :each do
+      @image = Image.create :file => upload('big-milton.jpg')
+    end
+    
+    it "should generate 640px wide version when image is wider than 640px wide and generating an image smaller than 640px wide" do
+      path = @image.path(:crop => true, :size => '40x40')
+      File.exists?(path.gsub(/\.crop=true_size=40x40/, '.size=640x')).should be_true
+    end
+    
+    it "should generate images smaller than 640px wide from the existing 640px one" do
+      # TODO: how can i test this?
+      @image.path(:crop => true, :size => '40x40')
+    end
+  end
+  
+  describe "fetching thumbnails" do
+    before :each do
+      @image = Image.create :file => upload('milton.jpg')
+    end
+    
+    it "should use the partitioned path when grabbing the original file" do
+      @image.path.should =~ /\/\d+\/\d+\/milton.jpg$/
+    end
+
+    it "should use the partitioned path and derivative path when grabbing a thubmnail" do
+      @image.path(:size => '10x10', :crop => true).should =~ /\/milton\/milton.crop=true_size=10x10.jpg$/
+    end
+    
+    it "should append source filename to thumbnail path" do
+      @image.path(:size => '10x10').should =~ /\/milton\/milton.size=10x10.jpg$/
+    end
+  end
 end

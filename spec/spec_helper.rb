@@ -7,6 +7,10 @@ load(File.dirname(__FILE__) + '/schema.rb')
 
 Spec::Runner.configure do |config|
   config.fixture_path = File.join(File.dirname(__FILE__), 'fixtures/')
+  
+  # remove files created from previous spec run, happens before instead of
+  # after so you can view them after you run the specs
+  FileUtils.rm_rf(File.join(File.dirname(__FILE__), 'output'))
 end
 
 def upload(file, type='image/jpg')

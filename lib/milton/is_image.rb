@@ -14,9 +14,6 @@ module Citrusbyte
       end
 
       module InstanceMethods
-        def to_s
-          self.public_filename
-        end
       end
     end
   end

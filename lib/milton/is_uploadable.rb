@@ -6,22 +6,19 @@ module Citrusbyte
       end
 
       module IsMethods
-        @@tempfile_path = File.join(RAILS_ROOT, "tmp", "milton")
-        mattr_reader :tempfile_path
-
         def is_uploadable(options = {})
           raise "Milton's is_uploadable requires a filename column on #{class_name} table" unless column_names.include?("filename")
 
-          options[:min_size]     ||= 1
-          options[:max_size]     ||= 4.megabytes
-          options[:size]         ||= (options[:min_size]..options[:max_size])
-          options[:partitioning] ||= true
+          options[:min_size]      ||= 1
+          options[:max_size]      ||= 4.megabytes
+          options[:size]          ||= (options[:min_size]..options[:max_size])
+          options[:partitioning]  ||= true
+          options[:tempfile_path] ||= File.join(RAILS_ROOT, "tmp", "milton")
 
           ensure_attachment_methods options
 
-          class_inheritable_accessor :uploadable_options
-          self.uploadable_options = options
-
+          UploadableFile.options = AttachableFile.options.merge(options)
+          
           after_save :save_uploaded_file
 
           extend  Citrusbyte::Milton::IsUploadable::ClassMethods
@@ -58,64 +55,72 @@ module Citrusbyte
         
         def file=(file)
           return nil if file.nil? || file.size == 0
-          @uploaded_file    = UploadedFile.new(file, self.class.tempfile_path)
-          self.content_type = @uploaded_file.content_type
-          self.filename     = @uploaded_file.filename
-          self.size         = @uploaded_file.size if respond_to?(:size=)
+          @upload           = UploadableFile.new(self, file)
+          self.filename     = @upload.filename
+          self.size         = @upload.size if respond_to?(:size=)
+          self.content_type = @upload.content_type if respond_to?(:content_type=)
         end
         
         protected          
           def save_uploaded_file
-            unless @uploaded_file.saved?
+            unless @upload.saved?
               callback :before_file_saved
-              @uploaded_file.save(full_filename, self.attachment_options[:chmod])
+              @upload.save
               callback :after_file_saved
-              self.path = partitioned_path
-              save
             end
           end
       end
-      
-      class UploadedFile
-        attr_reader :content_type, :filename, :size
-        
-        def initialize(data_or_path, tempfile_path)
-          @has_been_saved = false
-          @content_type   = data_or_path.content_type
-          @filename       = data_or_path.original_filename if respond_to?(:filename)
+    end
+    
+    class UploadableFile < AttachableFile
+      attr_reader :content_type, :filename, :size
+
+      class << self
+        def write_to_temp_file(data_or_path)
+          FileUtils.mkdir_p(self.options[:tempfile_path]) unless File.exists?(self.options[:tempfile_path])
           
-          FileUtils.mkdir_p(tempfile_path) unless File.exists?(tempfile_path)
+          tempfile = Tempfile.new("#{rand(Time.now.to_i)}", self.options[:tempfile_path])
           
-          @file = Tempfile.new("#{rand(Time.now.to_i)}#{filename || 'file'}", tempfile_path) do |tmp|
-            if data_or_path.is_a?(StringIO)
-              tmp.binmode
-              tmp.write data
-              tmp.close
-            else
-              tmp.close
-              FileUtils.cp file, tmp.path
-            end
+          if data_or_path.is_a?(StringIO)
+            tempfile.binmode
+            tempfile.write data
+            tempfile.close
+          else
+            tempfile.close
+            FileUtils.cp((data_or_path.respond_to?(:path) ? data_or_path.path : data_or_path), tempfile.path)
           end
           
-          @size = File.size(self.path)
+          tempfile
         end
-        
-        def saved?
-          @has_been_saved
-        end
-        
-        def save(filename, chmod)
-          return true if self.saved?
-          File.cp(self.path, filename)
-          File.chmod(chmod, filename)
-          @has_been_saved = true
-        end
-  
-        protected
-          def path
-            @file.respond_to?(:path) ? @file.path : @file.to_s
-          end
       end
+
+      def initialize(attachment, data_or_path)
+        @has_been_saved = false
+        @content_type   = data_or_path.content_type
+        @filename       = data_or_path.original_filename if respond_to?(:filename)
+        @tempfile       = UploadableFile.write_to_temp_file(data_or_path)
+        @size           = File.size(self.temp_path)
+
+        super attachment, filename
+      end
+
+      def saved?
+        @has_been_saved
+      end
+
+      def save
+        return true if self.saved?
+        recreate_directory
+        recreate_derivative_directory
+        File.cp(temp_path, path)
+        File.chmod(self.class.options[:chmod], path)
+        @has_been_saved = true
+      end
+
+      protected      
+        def temp_path
+          @tempfile.respond_to?(:path) ? @tempfile.path : @tempfile.to_s
+        end
     end
   end
 end

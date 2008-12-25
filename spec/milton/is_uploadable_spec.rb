@@ -16,21 +16,21 @@ describe Citrusbyte::Milton::IsUploadable do
   
   describe "setting :file_system_path" do
     it "should allow options to be accessed in uploadable_options" do
-      Attachment.uploadable_options.should be_kind_of(Hash)
+      Citrusbyte::Milton::UploadableFile.options.should be_kind_of(Hash)
     end
     
     it "should set the initial file path to root public then table name" do
-      Attachment.uploadable_options[:file_system_path].should eql(File.join(RAILS_ROOT, "public", Attachment.table_name)[1..-1])
+      Citrusbyte::Milton::UploadableFile.options[:file_system_path].should eql(File.join(RAILS_ROOT, "public", Attachment.table_name)[1..-1])
     end
     
     it "should be able to overwrite file_system_path from is_uploadable call" do
       Attachment.class_eval("is_uploadable(:file_system_path => 'foo')")
-      Attachment.uploadable_options[:file_system_path].should eql('foo')
+      Citrusbyte::Milton::UploadableFile.options[:file_system_path].should eql('foo')
     end
 
     it "should strip leading / from file_system_path" do
       Attachment.class_eval("is_uploadable(:file_system_path => '/foo')")
-      Attachment.uploadable_options[:file_system_path].should eql('foo')
+      Citrusbyte::Milton::UploadableFile.options[:file_system_path].should eql('foo')
     end
   end
     
@@ -58,7 +58,16 @@ describe Citrusbyte::Milton::IsUploadable do
       
       it "should save the upload to the filesystem on save" do
         @attachment.save
-        File.exists?(@attachment.full_filename).should be_true
+        File.exists?(@attachment.path).should be_true
+      end
+      
+      it "should have the same filesize as original file when large enough not to be a StringIO" do
+        @attachment.save
+        File.size(@attachment.path).should be_eql(File.size(File.join(File.dirname(__FILE__), '..', 'fixtures', 'milton.jpg')))
+      end
+      
+      it "should have the same filesize as original file when small enough to be a StringIO" do
+        File.size(Attachment.create(:file => upload('mini-milton.jpg')).path).should be_eql(File.size(File.join(File.dirname(__FILE__), '..', 'fixtures', 'mini-milton.jpg')))
       end
     end
     
@@ -67,8 +76,12 @@ describe Citrusbyte::Milton::IsUploadable do
         @attachment = Attachment.create! :file => upload('milton.jpg')
       end
 
-      it "should be in format root/table_name/partition/filename" do
-        @attachment.full_filename.should =~ /^#{Attachment.uploadable_options[:file_system_path]}\/#{@attachment.path}\/#{@attachment.filename}$/
+      it "should use set file_system_path" do
+        @attachment.path.should =~ /^#{Citrusbyte::Milton::AttachableFile.options[:file_system_path]}.*$/
+      end
+      
+      it "should use uploaded filename" do
+        @attachment.path.should =~ /^.*#{@attachment.filename}$/
       end
     end
   end

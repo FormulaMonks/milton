@@ -5,6 +5,47 @@ require 'milton/is_uploadable'
 
 module Citrusbyte
   module Milton
+    # Some definitions for file semantics used throughout Milton, understanding
+    # this will make understanding the code a bit easier and avoid ambiguity:
+    #
+    # path:
+    #   the full path to a file or directory in the filesystem
+    #     /var/log/apache2 or /var/log/apache2/access.log
+    #   can also be defined as:
+    #     path == dirname + filename
+    #     path == dirname + basename + extension
+    #
+    # dirname:
+    #   the directory portion of the path to a file or directory, all the chars
+    #   up to the final /
+    #     /var/log/apache2 => /var/log/apache2
+    #     /var/log/apache2/access.log => /var/log/apache2
+    #
+    # basename:
+    #   the portion of a filename *with no extension* (ruby's "basename" may or
+    #   may not have an extension), all the chars after the last / and before
+    #   the last .
+    #     /var/log/apache2 => nil
+    #     /var/log/apache2/access.log => access
+    #     /var/log/apache2/access.2008.log => access.2008
+    #
+    # extension:
+    #   the extension portion of a filename w/ no preceding ., all the chars
+    #   after the final .
+    #     /var/log/apache2 => nil
+    #     /var/log/apache2/access.log => log
+    #     /var/log/apache2/access.2008.log => log
+    # 
+    # filename:
+    #   the filename portion of a path w/ extension, all the chars after the
+    #   final /
+    #     /var/log/apache2 => nil
+    #     /var/log/apache2/access.log => access.log
+    #     /var/log/apache2/access.2008.log => access.2008.log
+    #   can also be defined as:
+    #     filename == basename + '.' + extension
+    #
+    
     def self.included(base)
       base.extend Citrusbyte::Milton::BaseMethods
       base.extend Citrusbyte::Milton::ClassMethods
