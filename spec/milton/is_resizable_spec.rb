@@ -55,6 +55,15 @@ describe Citrusbyte::Milton::IsResizeable do
       @image = Image.create :file => upload('milton.jpg')
     end
 
+    describe "checking errors" do
+      it "should raise a MissingFileError if source file does not exist" do
+        FileUtils.rm(@image.path)
+        lambda {
+          @image.path(:size => '50x50')
+        }.should raise_error(Citrusbyte::Milton::MissingFileError)
+      end
+    end
+
     describe "when cropped" do
       before :each do
         @info = Citrusbyte::Milton::IsResizeable::Image.from_path(@image.reload.path(:size => '50x50', :crop => true))

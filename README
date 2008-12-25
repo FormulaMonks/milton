@@ -10,17 +10,3 @@ but provides a lot of power.
 
 === For Image manipulation (not required!)
 * ImageMagick (more processors coming soon)
-
-== Installation and Setup
-
-Read the INSTALL file for more information.
-
-== Testing
-
-To add the Milton specs to your rails application:
-
- 1. Copy the attachment_pow/ folder in the spec/ directory to the spec/
-  directory in your rails application. Make sure you remember to move the
-  folder and not just the files.
- 
- 2. More more ore...

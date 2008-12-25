@@ -72,5 +72,7 @@ module Citrusbyte
          Digest::SHA1.hexdigest((1..6).collect { (i = rand(62); i += ((i < 10) ? 48 : ((i < 36) ? 55 : 61 ))).chr }.join).slice(1..length)
       end
     end
+    
+    class MissingFileError < StandardError;end;
   end
 end

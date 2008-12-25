@@ -46,7 +46,8 @@ module Citrusbyte
 
         class << self
           def from_path(path)
-            new($1, $2) if `identify #{path}` =~ /.*? (\d+)x(\d+)\+\d+\+\d+/
+            raise Citrusbyte::Milton::MissingFileError.new("Could not identify #{path} as an image, does the file exist?") unless `identify #{path}` =~ /.*? (\d+)x(\d+)\+\d+\+\d+/
+            new($1, $2)
           end
 
           def from_geometry(geometry)
