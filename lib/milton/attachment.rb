@@ -20,7 +20,6 @@ module Citrusbyte
           raise "Milton requires a filename column on #{table_name} table" unless column_names.include?("filename")
           
           options[:file_system_path] ||= File.join(RAILS_ROOT, "public", table_name)
-          options[:file_system_path] = options[:file_system_path][1..-1] if options[:file_system_path].first == '/'
           options[:chmod]            ||= 0755
           options[:separator]        ||= '.'
           options[:replacement]      ||= '-'

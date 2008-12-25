@@ -57,12 +57,9 @@ module Citrusbyte
     module BaseMethods
       protected
         def ensure_attachment_methods(options={})
-          options[:file_system_path] ||= File.join(RAILS_ROOT, "public", table_name)
-          options[:file_system_path] = options[:file_system_path][1..-1] if options[:file_system_path].first == '/'
-          
           unless included_modules.include?(Citrusbyte::Milton::Attachment)
             include Citrusbyte::Milton::Attachment
-            has_attachment_methods(:file_system_path => options[:file_system_path])
+            has_attachment_methods(options)
           end
         end
     end
