@@ -4,6 +4,7 @@ require 'fileutils'
 module Citrusbyte
   module Milton
     module Attachment
+      # TODO: make setable in options
       # character used to seperate a filename from its derivative options, this
       # character will be stripped from all incoming filenames and replaced by
       # REPLACEMENT
@@ -16,7 +17,7 @@ module Citrusbyte
       
       module AttachmentMethods
         def has_attachment_methods(options={})
-          raise "Milton requires filename and path columns on #{table_name} table" unless column_names.include?("filename") && column_names.include?("path")
+          raise "Milton requires a filename column on #{table_name} table" unless column_names.include?("filename")
           
           options[:file_system_path] ||= File.join(RAILS_ROOT, "public", table_name)
           options[:file_system_path] = options[:file_system_path][1..-1] if options[:file_system_path].first == '/'
@@ -28,7 +29,7 @@ module Citrusbyte
           
           validates_presence_of :filename
           
-          before_destroy :destroy_derivatives
+          before_destroy :destroy_attached_file
           
           extend  Citrusbyte::Milton::Attachment::ClassMethods
           include Citrusbyte::Milton::Attachment::InstanceMethods
@@ -52,6 +53,10 @@ module Citrusbyte
         protected
           def attached_file
             @attached_file ||= AttachableFile.new(self, filename)
+          end
+          
+          def destroy_attached_file
+            attached_file.destroy
           end
       end
     end
@@ -104,6 +109,12 @@ module Citrusbyte
         File.exist?(path)
       end
       
+      # Removes the file associated w/ this attachment from disk
+      def destroy
+        destroy_derivatives
+        destroy_file
+      end
+      
       protected
         # Returns the file as a File object
         def file_reference
@@ -128,16 +139,13 @@ module Citrusbyte
           self.class.recreate_directory(dirname) unless File.exists?(dirname)
         end
         
-        # Removes the file associated w/ this attachment from disk
-        def destroy
-          FileUtils.rm path if File.exists?(path)
-        end          
-
         # Derivatives of this Attachment ====================================
         
-        # Returns an array of derivatives of this image
+        # Returns an array of derivatives of this attachment
         def derivatives
-          Dir.glob(dirname)
+          Dir.glob(Derivative.dirname_for(path)).collect do |filename|
+            Derivative.from_filename(filename)
+          end
         end
         
         # Recreates the directory this file will be stored in, as well as the
@@ -150,6 +158,11 @@ module Citrusbyte
         # Removes the derivatives folder for this file and all files within
         def destroy_derivatives
           FileUtils.rm_rf dirname if File.exists?(dirname)
+        end
+        
+        # Removes the file from the filesystem
+        def destroy_file
+          FileUtils.rm path if File.exists?(path)
         end
     end
     
