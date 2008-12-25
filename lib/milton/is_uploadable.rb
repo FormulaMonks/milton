@@ -97,7 +97,7 @@ module Citrusbyte
       def initialize(attachment, data_or_path)
         @has_been_saved = false
         @content_type   = data_or_path.content_type
-        @filename       = data_or_path.original_filename if respond_to?(:filename)
+        @filename       = AttachableFile.sanitize_filename(data_or_path.original_filename) if respond_to?(:filename)
         @tempfile       = UploadableFile.write_to_temp_file(data_or_path)
         @size           = File.size(self.temp_path)
 

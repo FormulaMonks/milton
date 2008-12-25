@@ -75,5 +75,19 @@ describe Citrusbyte::Milton::IsUploadable do
         @attachment.path.should =~ /^.*#{@attachment.filename}$/
       end
     end
+    
+    describe "sanitizing filename" do
+      before :each do
+        @attachment = Attachment.create! :file => upload('unsanitary .milton.jpg')
+      end
+      
+      it "should strip the space and . and replace them with -" do
+        @attachment.path.should =~ /^.*\/unsanitary--milton.jpg$/
+      end
+      
+      it "should exist with sanitized filename" do
+        File.exists?(@attachment.path).should be_true
+      end
+    end
   end
 end

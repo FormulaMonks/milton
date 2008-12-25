@@ -4,13 +4,6 @@ require 'fileutils'
 module Citrusbyte
   module Milton
     module Attachment
-      # TODO: make setable in options
-      # character used to seperate a filename from its derivative options, this
-      # character will be stripped from all incoming filenames and replaced by
-      # REPLACEMENT
-      SEPARATOR   = '.'
-      REPLACEMENT = '-'
-      
       def self.included(base)
         base.extend Citrusbyte::Milton::Attachment::AttachmentMethods
       end
@@ -19,10 +12,13 @@ module Citrusbyte
         def has_attachment_methods(options={})
           raise "Milton requires a filename column on #{table_name} table" unless column_names.include?("filename")
           
-          options[:file_system_path] ||= File.join(RAILS_ROOT, "public", table_name)
-          options[:chmod]            ||= 0755
+          # character used to seperate a filename from its derivative options, this
+          # character will be stripped from all incoming filenames and replaced by
+          # replacement
           options[:separator]        ||= '.'
           options[:replacement]      ||= '-'
+          options[:file_system_path] ||= File.join(RAILS_ROOT, "public", table_name)
+          options[:chmod]            ||= 0755
           
           AttachableFile.options = options
           
