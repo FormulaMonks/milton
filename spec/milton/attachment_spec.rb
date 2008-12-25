@@ -35,9 +35,19 @@ describe Attachment do
       @image.filename.should eql('milton.jpg')
     end
     
-    it "should strip SEPERATOR (.) from the filename and replace them with REPLACEMENT (-)" do
+    it "should strip seperator (.) from the filename and replace them with replacement (-)" do
       @image.filename = 'foo.bar.baz.jpg'
       @image.filename.should eql('foo-bar-baz.jpg')
+    end
+  end
+  
+  describe "path partitioning" do
+    before :each do
+      @image = Image.new :file => upload('milton.jpg')
+    end
+    
+    it "should be stored in a partitioned folder based on its id" do
+      @image.path.should =~ /^.*\/#{Citrusbyte::Milton::AttachableFile.partition(@image.id)}\/#{@image.filename}$/
     end
   end
 end

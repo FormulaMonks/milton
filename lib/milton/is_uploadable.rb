@@ -9,10 +9,11 @@ module Citrusbyte
         def is_uploadable(options = {})
           raise "Milton's is_uploadable requires a filename column on #{class_name} table" unless column_names.include?("filename")
 
-          options[:min_size]      ||= 1
-          options[:max_size]      ||= 4.megabytes
-          options[:size]          ||= (options[:min_size]..options[:max_size])
-          options[:partitioning]  ||= true
+          # TODO: implement size validations
+          # options[:min_size]      ||= 1
+          # options[:max_size]      ||= 4.megabytes
+          # options[:size]          ||= (options[:min_size]..options[:max_size])
+          
           options[:tempfile_path] ||= File.join(RAILS_ROOT, "tmp", "milton")
 
           ensure_attachment_methods options

@@ -69,10 +69,26 @@ module Citrusbyte
         end
 
         # Creates the given directory and sets it to the mode given in
-        # attachment_options[:chmod]
+        # options[:chmod]
         def recreate_directory(directory)
           FileUtils.mkdir_p(directory)
           File.chmod(options[:chmod], directory)
+        end
+        
+        # Partitioner that takes an id, pads it up to 12 digits then splits
+        # that into 4 folders deep, each 3 digits long.
+        # 
+        # i.e.
+        #   000/000/012/139
+        # 
+        # Scheme allows for 1000 billion files while never storing more than
+        # 1000 files in a single folder.
+        #
+        # Can overwrite this method to provide your own partioning scheme.
+        def partition(id)
+          # TODO: there's probably some fancy 1-line way to do this...
+          padded = ("0"*(12-id.to_s.size)+id.to_s).split('')
+          File.join(*[0, 3, 6, 9].collect{ |i| padded.slice(i, 3).join })
         end
       end
       
@@ -117,10 +133,8 @@ module Citrusbyte
           @file_reference
         end
         
-        # Gives the id partitioned portion of the path
-        # FIXME: use padded 000/000/000 partitioning scheme
         def partitioned_path
-          File.join((@attachment.id/2000000).floor.to_s, (@attachment.id%2000).to_s)
+          self.class.partition(@attachment.id)
         end
 
         # The full path to the root of where files will be stored on disk
