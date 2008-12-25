@@ -19,7 +19,7 @@ module Citrusbyte
 
           UploadableFile.options = AttachableFile.options.merge(options)
           
-          after_save :save_uploaded_file
+          after_create :save_uploaded_file
 
           extend  Citrusbyte::Milton::IsUploadable::ClassMethods
           include Citrusbyte::Milton::IsUploadable::InstanceMethods

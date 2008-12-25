@@ -89,5 +89,17 @@ describe Citrusbyte::Milton::IsUploadable do
         File.exists?(@attachment.path).should be_true
       end
     end
+    
+    describe "saving attachment after upload" do
+      before :each do
+        @attachment = Attachment.create! :file => upload('unsanitary .milton.jpg')
+      end
+      
+      it "should save the file again" do
+        lambda {
+          Attachment.find(@attachment.id).save!
+        }.should_not raise_error
+      end
+    end
   end
 end
