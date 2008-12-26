@@ -45,8 +45,8 @@ module Citrusbyte
           write_attribute :filename, AttachableFile.sanitize_filename(name)
         end
 
-        # The path the file, takes an optional has of options which can be used
-        # to determine a particular derivative of the file desired
+        # The path to the file, takes an optional hash of options which can be
+        # used to determine a particular derivative of the file desired
         def path(options={})
           attached_file.path(options)
         end
