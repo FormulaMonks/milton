@@ -39,7 +39,7 @@ module Citrusbyte
         # Sets the filename to the given filename (sanitizes the given filename
         # as well)
         #
-        # TODO: change the filename on the underlying file system on save so ass
+        # TODO: change the filename on the underlying file system on save so as
         # not to orphan the file
         def filename=(name)
           write_attribute :filename, AttachableFile.sanitize_filename(name)
