@@ -1,1 +1,26 @@
-...
+== Installing Milton
+
+GemPlugin (Rails 2.1+)
+-------------------------------------------------------------------------------
+ 
+Add to your environment.rb:
+  
+  config.gem "citrusbyte-milton", :source => "http://gems.github.com", :lib => "milton"
+  
+Then run "rake gems:install" to install the gem.
+
+Plugin
+-------------------------------------------------------------------------------
+  
+  script/plugin install git://github.com/citrusbyte/milton.git
+  
+Gem
+-------------------------------------------------------------------------------
+
+  gem install citrusbyte-milton --source http://gems.github.com
+  
+== Installing ImageMagick (for image resizing)
+
+== Installing a FileSystem
+
+...j/k j/k
