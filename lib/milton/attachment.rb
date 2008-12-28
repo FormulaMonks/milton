@@ -35,6 +35,7 @@ module Citrusbyte
         end
       end
       
+      # These get mixed in to your model when you use Milton
       module InstanceMethods
         # Sets the filename to the given filename (sanitizes the given filename
         # as well)
@@ -108,6 +109,9 @@ module Citrusbyte
         end
       end
       
+      attr_accessor :filename
+      attr_accessor :attachment
+      
       # TODO: can probably fanagle a way to only pass a reference to the model
       # and not need the filename (or better yet just the filename and 
       # decouple)
@@ -120,7 +124,7 @@ module Citrusbyte
       # If no options are given then returns the path and filename to the
       # original file.
       def path(options={})
-        options.empty? ? File.join(dirname, @filename) : Derivative.new(@filename, options).path
+        options.empty? ? File.join(dirname, filename) : Derivative.new(filename, options).path
       end
       
       # Returns the full directory path up to the file, w/o the filename.
@@ -148,7 +152,7 @@ module Citrusbyte
         # Returns the partitioned path segment based on the id of the model
         # this file is attached to.
         def partitioned_path
-          self.class.partition(@attachment.id)
+          self.class.partition(self.attachment.id)
         end
 
         # The full path to the root of where files will be stored on disk.
@@ -161,16 +165,15 @@ module Citrusbyte
           self.class.recreate_directory(dirname) unless File.exists?(dirname)
         end
         
-        # Removes the containing directory from the filesystem.
+        # Removes the containing directory from the filesystem (and hence the
+        # file and any derivatives)
         def destroy_file
           FileUtils.rm_rf dirname if File.exists?(dirname)
         end
-
-        # Derivatives of this Attachment ====================================
         
-        # Returns an array of derivatives of this attachment
+        # Returns an array of Derivatives of this AttachableFile.
         def derivatives
-          Dir.glob(Derivative.dirname_for(path)).collect do |filename|
+          Dir.glob(dirname + '/*').reject{ |filename| filename == self.filename }.collect do |filename|
             Derivative.from_filename(filename)
           end
         end
@@ -186,7 +189,7 @@ module Citrusbyte
     # Files created as derivatives have their creation options appended into
     # their filenames so it can be checked later if a file w/ the given
     # options already exists (so as not to create it again).
-    # 
+    #
     class Derivative
       attr_reader :options
       
@@ -219,22 +222,17 @@ module Citrusbyte
         def from_filename(filename)
           Derivative.new(filename, options_from(extract_options_from(filename)))
         end
-        
-        # Gives the path to where derivatives of this file are stored.
-        # Derivatives are any files which are based off of this file but are
-        # not Attachments themselves (i.e. thumbnails, transcoded copies, 
-        # etc...)
-        def dirname_for(path)
-          File.dirname(path)
-        end
       end
       
+      # Instantiate a new Derivative, takes a reference to the AttachableFile
+      # (or specialization class) that this will be a derivative of, and a hash
+      # of the options defining the derivative.
       def initialize(file, options)
         @file    = file
         @options = options
       end
       
-      # The filename of this Derivative with embedded options.
+      # The resulting filename of this Derivative with embedded options.
       def filename
         self.class.filename_for(@file.path, options)
       end
