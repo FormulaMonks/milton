@@ -40,34 +40,49 @@ module Citrusbyte
           end
       end
         
+      # Generic view of an "Image", or rather, something with a width and a
+      # height we care about =).
       class Image
         attr_accessor :width
         attr_accessor :height
 
         class << self
+          # Instantiates a new image from the given path. Uses ImageMagick's
+          # identify method to determine the width and height of the image with
+          # the given path and returns a new Image with those dimensions.
+          #
+          # Raises a MissingFileError if the given path could not be identify'd
+          # by ImageMagick (resulting in a height and width).
           def from_path(path)
             raise Citrusbyte::Milton::MissingFileError.new("Could not identify #{path} as an image, does the file exist?") unless `identify #{path}` =~ /.*? (\d+)x(\d+)\+\d+\+\d+/
             new($1, $2)
           end
 
+          # Instantiates a new image from the given geometry string. A geometry
+          # string is just something like 50x40. The first number is the width
+          # and the second is the height.
           def from_geometry(geometry)
             new(*(geometry.split("x").collect(&:to_i)))
           end
         end
 
+        # Instantiates a new Image with the given width and height
         def initialize(width=nil, height=nil)
           @width  = width.to_i
           @height = height.to_i
         end
-
+        
+        # Returns the larger dimension of the Image
         def larger_dimension
           width > height ? width : height
         end
 
+        # Returns true if the Image is wider than it is tall
         def wider?
           width > height
         end
-
+        
+        # Returns true if the Image is square
         def square?
           width == height
         end
@@ -76,11 +91,21 @@ module Citrusbyte
       class CropCalculator
         attr_reader :original, :target
 
+        # Initializes a new CropCalculator with the two given Images.
+        #
+        # A CropCalculator is used to calculate the proper zoom/crop dimensions
+        # to be passed to ImageMagick's convert method in order to transform
+        # the original Image's dimensions into the target Image's dimensions
+        # with sensible zoom/cropping.
         def initialize(original, target)
           @original = original
           @target   = target
         end
-
+        
+        # Returns the geometry string to send to ImageMagick's convert -resize
+        # argument -- that is, the dimensions that the original Image would
+        # need to be resized to in order to result in the given target Image's
+        # dimensions with cropping.
         def resizing_geometry
           case
             when original.wider? then "#{resized_width}x#{target.height}"
@@ -90,10 +115,12 @@ module Citrusbyte
           end
         end
 
+        # The geometry string to send to ImageMagick's convert -crop argument.
         def cropping_geometry
           "#{target.width}x#{target.height}+0+0"
         end
 
+        # The gravity to use for cropping.
         def gravity
           original.wider? ? "center" : "north"
         end
@@ -126,6 +153,15 @@ module Citrusbyte
     
     class ResizeableFile < AttachableFile
       class << self
+        # Returns the given size as an array of two integers, width first. Can
+        # handle:
+        #
+        # A fixnum argument, which results in a square sizing:
+        #   parse_size(40) => [40, 40]
+        # An Array argument, which is simply returned:
+        #   parse_size([40, 40]) => [40, 40]
+        # A String argument, which is split on 'x' and converted:
+        #   parse_size("40x40") => [40, 40]
         def parse_size(size)
           case size.class.to_s
           when "Fixnum" then [size.to_i, size.to_i]
@@ -139,10 +175,6 @@ module Citrusbyte
         super attachment, filename
       end
       
-      def image_path(options={})
-        path.gsub(/.*public\/images/, '')
-      end
-
       def path(options={})
         options = Derivative.options_from(options) if options.is_a?(String)
         return super if options.empty?
