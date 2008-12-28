@@ -136,7 +136,6 @@ module Citrusbyte
       # Removes the file from the underlying file system and any derivatives of
       # the file.
       def destroy
-        destroy_derivatives
         destroy_file
       end
       
@@ -162,9 +161,9 @@ module Citrusbyte
           self.class.recreate_directory(dirname) unless File.exists?(dirname)
         end
         
-        # Removes the file from the filesystem.
+        # Removes the containing directory from the filesystem.
         def destroy_file
-          FileUtils.rm path if File.exists?(path)
+          FileUtils.rm_rf dirname if File.exists?(dirname)
         end
 
         # Derivatives of this Attachment ====================================
@@ -174,17 +173,6 @@ module Citrusbyte
           Dir.glob(Derivative.dirname_for(path)).collect do |filename|
             Derivative.from_filename(filename)
           end
-        end
-        
-        # Recreates the directory derivatives of this file will be stored in.
-        def recreate_derivative_directory
-          dirname = Derivative.dirname_for(path)
-          self.class.recreate_directory(dirname) unless File.exists?(dirname)
-        end
-
-        # Removes the derivatives folder for this file and all files within.
-        def destroy_derivatives
-          FileUtils.rm_rf dirname if File.exists?(dirname)
         end
     end
 
@@ -237,7 +225,7 @@ module Citrusbyte
         # not Attachments themselves (i.e. thumbnails, transcoded copies, 
         # etc...)
         def dirname_for(path)
-          File.join(File.dirname(path), File.basename(path, File.extname(path)))
+          File.dirname(path)
         end
       end
       
@@ -253,7 +241,7 @@ module Citrusbyte
       
       # The full path and filename to this Derivative.
       def path
-        File.join(Derivative.dirname_for(@file.path), filename)
+        File.join(@file.dirname, filename)
       end
       
       # Returns true if the file resulting from this Derivative exists.

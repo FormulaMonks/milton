@@ -4,7 +4,6 @@ describe Attachment do
   describe "being destroyed" do
     before :each do
       @attachment = Attachment.create :file => upload('milton.jpg')
-      @derivative_path = File.dirname(@attachment.path) + '/milton'
     end
 
     it "should delete the underlying file from the filesystem" do
@@ -12,13 +11,12 @@ describe Attachment do
       File.exists?(@attachment.path).should be_false
     end
     
-    it "should have a derivative path before being destroyed" do
-      File.exists?(@derivative_path).should be_true
-    end
-    
-    it "should delete the derivative folder from the filesystem" do
+    # the partitioning algorithm ensures that each attachment model has its own
+    # folder, so we can safely delete the folder, if you write a new
+    # partitioner this might change!
+    it "should delete the directory containing the file and all derivatives from the filesystem" do
       @attachment.destroy
-      File.exists?(@derivative_path).should be_false
+      File.exists?(File.dirname(@attachment.path)).should be_false
     end
   end
   

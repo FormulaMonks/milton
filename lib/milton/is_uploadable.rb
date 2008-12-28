@@ -112,7 +112,6 @@ module Citrusbyte
       def save
         return true if self.saved?
         recreate_directory
-        recreate_derivative_directory
         File.cp(temp_path, path)
         File.chmod(self.class.options[:chmod], path)
         @has_been_saved = true

@@ -117,15 +117,11 @@ describe Citrusbyte::Milton::IsResizeable do
     end
     
     it "should use the partitioned path when grabbing the original file" do
-      @image.path.should =~ /\/\d+\/\d+\/milton.jpg$/
+      @image.path.should =~ /\/#{Citrusbyte::Milton::AttachableFile.partition(@image.id)}\/milton.jpg$/
     end
 
-    it "should use the partitioned path and derivative path when grabbing a thubmnail" do
-      @image.path(:size => '10x10', :crop => true).should =~ /\/milton\/milton.crop=true_size=10x10.jpg$/
-    end
-    
-    it "should append source filename to thumbnail path" do
-      @image.path(:size => '10x10').should =~ /\/milton\/milton.size=10x10.jpg$/
+    it "should use the partitioned path when grabbing a thubmnail" do
+      @image.path(:size => '10x10', :crop => true).should =~ /\/#{Citrusbyte::Milton::AttachableFile.partition(@image.id)}\/milton.crop=true_size=10x10.jpg$/
     end
   end
 end
