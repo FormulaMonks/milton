@@ -50,13 +50,13 @@ module Citrusbyte
         # .../public/ on, i.e. for showing images in your views.
         #
         #   @asset.path        => /var/www/site/public/assets/000/000/001/313/milton.jpg
-        #   @asset.public_path => assets/000/000/001/313/milton.jpg
+        #   @asset.public_path => /assets/000/000/001/313/milton.jpg
         #
         # Can send a different base path than public if you want to give the
         # path from that base on, useful if you change your root path to
         # somewhere else.
         def public_path(options={}, base='public')
-          path(options).gsub(/.*?\/#{base}\//, '')
+          path(options).gsub(/.*?\/#{base}/, '')
         end
         
         # The path to the file, takes an optional hash of options which can be

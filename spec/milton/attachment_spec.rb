@@ -56,12 +56,12 @@ describe Attachment do
     
     it "should give the path from public/ on to the filename" do
       @image.stub!(:path).and_return('/root/public/assets/1/milton.jpg')
-      @image.public_path.should eql("assets/1/milton.jpg")
+      @image.public_path.should eql("/assets/1/milton.jpg")
     end
     
     it "should give the path from foo/ on to the filename" do
       @image.stub!(:path).and_return('/root/foo/assets/1/milton.jpg')
-      @image.public_path({}, 'foo').should eql("assets/1/milton.jpg")
+      @image.public_path({}, 'foo').should eql("/assets/1/milton.jpg")
     end
   end
 end
