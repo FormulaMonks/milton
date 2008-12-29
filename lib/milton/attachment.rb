@@ -46,6 +46,19 @@ module Citrusbyte
           write_attribute :filename, AttachableFile.sanitize_filename(name)
         end
 
+        # Simple helper, same as path except returns the directory from
+        # .../public/ on, i.e. for showing images in your views.
+        #
+        #   @asset.path        => /var/www/site/public/assets/000/000/001/313/milton.jpg
+        #   @asset.public_path => assets/000/000/001/313/milton.jpg
+        #
+        # Can send a different base path than public if you want to give the
+        # path from that base on, useful if you change your root path to
+        # somewhere else.
+        def public_path(options={}, base='public')
+          path(options).gsub(/.*?\/#{base}\//, '')
+        end
+        
         # The path to the file, takes an optional hash of options which can be
         # used to determine a particular derivative of the file desired
         def path(options={})
@@ -126,7 +139,7 @@ module Citrusbyte
       def path(options={})
         options.empty? ? File.join(dirname, filename) : Derivative.new(filename, options).path
       end
-      
+            
       # Returns the full directory path up to the file, w/o the filename.
       def dirname
         File.join(root_path, partitioned_path)

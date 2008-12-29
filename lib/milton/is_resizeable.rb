@@ -33,7 +33,7 @@ module Citrusbyte
         def content_type=(type)
           write_attribute :content_type, type.to_s.strip
         end
-        
+                
         protected
           def attached_file
             @attached_file ||= ResizeableFile.new(self, filename)
