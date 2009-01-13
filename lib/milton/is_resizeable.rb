@@ -7,9 +7,9 @@ module Citrusbyte
 
       module IsMethods
         def is_resizeable(options={})
-          raise "is_resizeable requires a content_type column on #{class_name} table" unless column_names.include?("content_type")
-          
           ensure_attachment_methods options
+          
+          require_column 'content_type', "Milton's is_resizeable requires a content_type column on #{class_name} table"
 
           self.milton_options.merge!(options)
 

@@ -3,7 +3,7 @@ require 'fileutils'
 
 module Citrusbyte
   module Milton
-    module Attachment
+    module Attachment      
       def self.included(base)
         base.class_inheritable_accessor :milton_options
         base.milton_options = {}
@@ -11,12 +11,16 @@ module Citrusbyte
       end
       
       module AttachmentMethods
-        def has_attachment_methods(options={})
+        def require_column(column, message)
           begin
-            raise "Milton requires a filename column on #{class_name} table" unless column_names.include?("filename")
+            raise message unless column_names.include?(column)
           rescue ActiveRecord::StatementInvalid => i
             # table doesn't exist yet, i.e. hasn't been migrated in...
           end
+        end
+        
+        def has_attachment_methods(options={})
+          require_column 'filename', "Milton requires a filename column on #{class_name} table"
           
           # character used to seperate a filename from its derivative options, this
           # character will be stripped from all incoming filenames and replaced by
