@@ -124,4 +124,27 @@ describe Citrusbyte::Milton::IsResizeable do
       @image.path(:size => '10x10', :crop => true).should =~ /\/#{Citrusbyte::Milton::AttachableFile.partition(@image.id)}\/milton.crop=true_size=10x10.jpg$/
     end
   end
+  
+  describe "getting mime-type" do
+    before :each do
+      @image = Image.new :file => upload('milton.jpg')
+    end
+    
+    describe "from freshly uploaded file" do
+      it "should recognize it as an image/jpg" do
+        @image.content_type.should eql('image/jpg')
+      end
+    end
+    
+    describe "from existing file" do
+      before :each do
+        @image.save
+        @image.reload
+      end
+      
+      it "should recognize it as an image/jpg" do
+        @image.content_type.should eql('image/jpg')
+      end
+    end
+  end
 end

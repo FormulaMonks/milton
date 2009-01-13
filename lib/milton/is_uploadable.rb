@@ -84,7 +84,7 @@ module Citrusbyte
           
           if data_or_path.is_a?(StringIO)
             tempfile.binmode
-            tempfile.write data
+            tempfile.write data_or_path.read
             tempfile.close
           else
             tempfile.close

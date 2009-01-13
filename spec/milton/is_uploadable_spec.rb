@@ -53,6 +53,8 @@ describe Citrusbyte::Milton::IsUploadable do
       end
       
       it "should have the same filesize as original file when large enough not to be a StringIO" do
+        # FIXME: this doesn't actually upload as a StringIO, figure out how to
+        # force that
         @attachment.save
         File.size(@attachment.path).should be_eql(File.size(File.join(File.dirname(__FILE__), '..', 'fixtures', 'milton.jpg')))
       end
