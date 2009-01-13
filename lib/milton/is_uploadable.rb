@@ -6,20 +6,18 @@ module Citrusbyte
       end
 
       module IsMethods
-        def is_uploadable(options = {})
-          raise "Milton's is_uploadable requires a filename column on #{class_name} table" unless column_names.include?("filename")
-
+        def is_uploadable(options = {})          
           # TODO: implement size validations
           # options[:min_size]      ||= 1
           # options[:max_size]      ||= 4.megabytes
           # options[:size]          ||= (options[:min_size]..options[:max_size])
           
-          options[:tempfile_path] ||= File.join(RAILS_ROOT, "tmp", "milton")
-
           ensure_attachment_methods options
-
-          UploadableFile.options = AttachableFile.options.merge(options)
           
+          options[:tempfile_path] ||= File.join(RAILS_ROOT, "tmp", "milton")
+          
+          self.milton_options.merge!(options)
+
           after_create :save_uploaded_file
 
           extend  Citrusbyte::Milton::IsUploadable::ClassMethods
@@ -77,10 +75,10 @@ module Citrusbyte
       attr_reader :content_type, :filename, :size
 
       class << self
-        def write_to_temp_file(data_or_path)
-          FileUtils.mkdir_p(self.options[:tempfile_path]) unless File.exists?(self.options[:tempfile_path])
+        def write_to_temp_file(data_or_path, options)
+          FileUtils.mkdir_p(options[:tempfile_path]) unless File.exists?(options[:tempfile_path])
           
-          tempfile = Tempfile.new("#{rand(Time.now.to_i)}", self.options[:tempfile_path])
+          tempfile = Tempfile.new("#{rand(Time.now.to_i)}", options[:tempfile_path])
           
           if data_or_path.is_a?(StringIO)
             tempfile.binmode
@@ -98,8 +96,8 @@ module Citrusbyte
       def initialize(attachment, data_or_path)
         @has_been_saved = false
         @content_type   = data_or_path.content_type
-        @filename       = AttachableFile.sanitize_filename(data_or_path.original_filename) if respond_to?(:filename)
-        @tempfile       = UploadableFile.write_to_temp_file(data_or_path)
+        @filename       = AttachableFile.sanitize_filename(data_or_path.original_filename, attachment.class.milton_options) if respond_to?(:filename)
+        @tempfile       = UploadableFile.write_to_temp_file(data_or_path, attachment.class.milton_options)
         @size           = File.size(self.temp_path)
 
         super attachment, filename
@@ -113,7 +111,7 @@ module Citrusbyte
         return true if self.saved?
         recreate_directory
         File.cp(temp_path, path)
-        File.chmod(self.class.options[:chmod], path)
+        File.chmod(milton_options[:chmod], path)
         @has_been_saved = true
       end
 

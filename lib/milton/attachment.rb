@@ -5,12 +5,18 @@ module Citrusbyte
   module Milton
     module Attachment
       def self.included(base)
+        base.class_inheritable_accessor :milton_options
+        base.milton_options = {}
         base.extend Citrusbyte::Milton::Attachment::AttachmentMethods
       end
       
       module AttachmentMethods
         def has_attachment_methods(options={})
-          raise "Milton requires a filename column on #{table_name} table" unless column_names.include?("filename")
+          begin
+            raise "Milton requires a filename column on #{class_name} table" unless column_names.include?("filename")
+          rescue ActiveRecord::StatementInvalid => i
+            # table doesn't exist yet, i.e. hasn't been migrated in...
+          end
           
           # character used to seperate a filename from its derivative options, this
           # character will be stripped from all incoming filenames and replaced by
@@ -25,7 +31,7 @@ module Citrusbyte
           # mode to set on stored files and created directories
           options[:chmod]            ||= 0755
           
-          AttachableFile.options = options
+          self.milton_options.merge!(options)
           
           validates_presence_of :filename
           
@@ -43,7 +49,7 @@ module Citrusbyte
         # TODO: change the filename on the underlying file system on save so as
         # not to orphan the file
         def filename=(name)
-          write_attribute :filename, AttachableFile.sanitize_filename(name)
+          write_attribute :filename, AttachableFile.sanitize_filename(name, self.milton_options)
         end
 
         # Simple helper, same as path except returns the directory from
@@ -87,23 +93,21 @@ module Citrusbyte
     # into your model, you get a reference to an AttachableFile (or something
     # that extends AttachableFile).
     class AttachableFile
-      class_inheritable_accessor :options
-
       class << self
-        # Sanitizes the given filename, removes pathnames and the special chars
-        # needed for options seperation for derivatives
-        def sanitize_filename(filename)
-          File.basename(filename, File.extname(filename)).gsub(/^.*(\\|\/)/, '').
-            gsub(/[^\w]|#{Regexp.escape(options[:separator])}/, options[:replacement]).
-            strip + File.extname(filename)
-        end
+      # Sanitizes the given filename, removes pathnames and the special chars
+      # needed for options seperation for derivatives
+      def sanitize_filename(filename, options)
+        File.basename(filename, File.extname(filename)).gsub(/^.*(\\|\/)/, '').
+          gsub(/[^\w]|#{Regexp.escape(options[:separator])}/, options[:replacement]).
+          strip + File.extname(filename)
+      end
 
-        # Creates the given directory and sets it to the mode given in
-        # options[:chmod]
-        def recreate_directory(directory)
-          FileUtils.mkdir_p(directory)
-          File.chmod(options[:chmod], directory)
-        end
+      # Creates the given directory and sets it to the mode given in
+      # options[:chmod]
+      def recreate_directory(directory, options)
+        FileUtils.mkdir_p(directory)
+        File.chmod(options[:chmod], directory)
+      end
         
         # Partitioner that takes an id, pads it up to 12 digits then splits
         # that into 4 folders deep, each 3 digits long.
@@ -131,6 +135,11 @@ module Citrusbyte
       def initialize(attachment, filename)
         @attachment = attachment
         @filename   = filename
+      end
+      
+      # Returns the milton options on the associated attachment.
+      def milton_options
+        self.attachment.class.milton_options
       end
 
       # Returns the full path and filename to the file with the given options.
@@ -170,12 +179,12 @@ module Citrusbyte
 
         # The full path to the root of where files will be stored on disk.
         def root_path
-          self.class.options[:file_system_path]
+          milton_options[:file_system_path]
         end
 
         # Recreates the directory this file will be stored in.
         def recreate_directory
-          self.class.recreate_directory(dirname) unless File.exists?(dirname)
+          self.class.recreate_directory(dirname, milton_options) unless File.exists?(dirname)
         end
         
         # Removes the containing directory from the filesystem (and hence the
@@ -217,13 +226,6 @@ module Citrusbyte
           }).flatten]
         end
 
-        # Merges the given options to build a derviative filename and returns
-        # the resulting filename.
-        def filename_for(filename, options={})
-          append = options.collect{ |k, v| "#{k}=#{v}" }.sort.join('_')
-          File.basename(filename, File.extname(filename)) + (append.blank? ? '' : "#{AttachableFile.options[:separator]}#{append}") + File.extname(filename)
-        end
-        
         # Given a filename (presumably with options embedded in it) parses out
         # the options and returns them as a hash.
         def extract_options_from(filename)
@@ -247,7 +249,12 @@ module Citrusbyte
       
       # The resulting filename of this Derivative with embedded options.
       def filename
-        self.class.filename_for(@file.path, options)
+        filename = @file.path
+        append   = options.collect{ |k, v| "#{k}=#{v}" }.sort.join('_')
+        
+        File.basename(filename, File.extname(filename)) + 
+        (append.blank? ? '' : "#{@file.milton_options[:separator]}#{append}") + 
+        File.extname(filename)
       end
       
       # The full path and filename to this Derivative.

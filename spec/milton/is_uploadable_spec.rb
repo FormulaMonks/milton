@@ -4,28 +4,31 @@ describe Citrusbyte::Milton::IsUploadable do
   class NotUploadable < ActiveRecord::Base
   end
   
+  class NoTable < ActiveRecord::Base
+  end
+  
   describe "filename column" do
+    it 'should not raise an exception if there is a filename column' do
+      lambda { Attachment.class_eval("is_uploadable") }.should_not raise_error
+    end
+
     it "should raise an exception if there is no filename column" do
       lambda { NotUploadable.class_eval("is_uploadable") }.should raise_error
     end
-
-    it 'should not raise an exception if there is a filename column' do
-      lambda { Attachment.class_eval("is_uploadable") }.should_not raise_error
+    
+    it 'should not raise an exception if the underlying table doesn\'t exist' do
+      lambda { NoTable.class_eval('is_uploadable') }.should_not raise_error
     end
   end
   
   describe "setting :file_system_path" do
     it "should allow options to be accessed" do
-      Citrusbyte::Milton::UploadableFile.options.should be_kind_of(Hash)
+      Attachment.milton_options.should be_kind_of(Hash)
     end
     
     it "should be able to overwrite file_system_path from is_uploadable call" do
       Attachment.class_eval("is_uploadable(:file_system_path => 'foo')")
-      Citrusbyte::Milton::UploadableFile.options[:file_system_path].should eql('foo')
-    end
-    
-    after :all do
-      Citrusbyte::Milton::UploadableFile.options[:file_system_path] = File.join(File.dirname(__FILE__), '..', 'output')
+      Attachment.milton_options[:file_system_path].should eql('foo')
     end
   end
     
@@ -70,7 +73,7 @@ describe Citrusbyte::Milton::IsUploadable do
       end
 
       it "should use set file_system_path" do
-        @attachment.path.should =~ /^#{Citrusbyte::Milton::AttachableFile.options[:file_system_path]}.*$/
+        @attachment.path.should =~ /^#{@attachment.milton_options[:file_system_path]}.*$/
       end
       
       it "should use uploaded filename" do

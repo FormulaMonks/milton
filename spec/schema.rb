@@ -7,4 +7,7 @@ ActiveRecord::Schema.define :version => 0 do
     t.string :filename
     t.string :content_type
   end
+  
+  create_table :not_uploadables, :force => true do |t|
+  end
 end

@@ -1,6 +1,21 @@
 require File.dirname(__FILE__) + '/../spec_helper'
 
 describe Attachment do
+  describe "setting options" do
+    before :each do
+      Attachment.class_eval("is_uploadable :file_system_path => 'foo'")
+      Image.class_eval("is_uploadable :file_system_path => 'bar'")
+    end
+    
+    it "should not overwrite Attachment's file_system_path setting with Image's" do
+      Attachment.milton_options[:file_system_path].should eql('foo')
+    end
+
+    it "should not overwrite Image's file_system_path setting with Attachment's" do
+      Image.milton_options[:file_system_path].should eql('bar')
+    end
+  end
+  
   describe "being destroyed" do
     before :each do
       @attachment = Attachment.create :file => upload('milton.jpg')

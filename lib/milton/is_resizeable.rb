@@ -11,8 +11,8 @@ module Citrusbyte
           
           ensure_attachment_methods options
 
-          ResizeableFile.options = AttachableFile.options.merge(options)
-          
+          self.milton_options.merge!(options)
+
           extend  Citrusbyte::Milton::IsResizeable::ClassMethods
           include Citrusbyte::Milton::IsResizeable::InstanceMethods
         end
