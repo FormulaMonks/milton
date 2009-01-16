@@ -6,7 +6,9 @@ ActiveRecord::Base.logger = Logger.new(plugin_spec_dir + "/debug.log")
 load(File.dirname(__FILE__) + '/schema.rb')
 
 Spec::Runner.configure do |config|
-  config.fixture_path = File.join(File.dirname(__FILE__), 'fixtures/')
+  # have to set Test::Unit::TestCase.fixture_path until RSpec is fixed
+  # (config.fixture_path seems to be ignored w/ Rails 2.2.2/Rspec 1.1.12)
+  config.fixture_path = Test::Unit::TestCase.fixture_path = File.join(File.dirname(__FILE__), 'fixtures/')
   
   # remove files created from previous spec run, happens before instead of
   # after so you can view them after you run the specs
