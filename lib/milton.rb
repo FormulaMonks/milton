@@ -74,3 +74,5 @@ module Citrusbyte
     end
   end
 end
+
+ActiveRecord::Base.send(:include, Citrusbyte::Milton)

@@ -1,0 +1,5 @@
+== 0.2.1, released 2009-01-16
+  
+* Fixed init.rb to work as a gem
+* Altered gemspec a tad
+* Started CHANGELOG
