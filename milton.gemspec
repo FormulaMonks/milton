@@ -16,7 +16,7 @@ Gem::Specification.new do |s|
     INSTALL
     MIT-LICENSE
     README
-    CHANGELOG
+    CHANGELOG.rdoc
     init.rb
     lib/milton.rb
     lib/milton/attachment.rb
@@ -29,7 +29,7 @@ Gem::Specification.new do |s|
     spec/fixtures/big-milton.jpg
     spec/fixtures/milton.jpg
     spec/fixtures/mini-milton.jpg
-    spec/fixtures/unsanitary .milton.jpg
+    spec/fixtures/unsanitary\ .milton.jpg
     spec/milton/attachment_spec.rb
     spec/milton/is_image_spec.rb
     spec/milton/is_resizeable_spec.rb
