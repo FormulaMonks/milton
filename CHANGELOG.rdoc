@@ -1,3 +1,8 @@
+== 0.2.2, released 2009-02-16
+
+* Made recreate directories aware of symlinks to avoid trying to recreate the
+  folder attachments are stored in if it's a symlink
+
 == 0.2.1, released 2009-01-16
   
 * Fixed init.rb to work as a gem

@@ -1,7 +1,7 @@
 Gem::Specification.new do |s|
   s.name        = "milton"
-  s.version     = "0.2.1"
-  s.date        = "2008-01-16"
+  s.version     = "0.2.2"
+  s.date        = "2008-02-16"
   
   s.summary     = "Asset handling Rails plugin that makes few assumptions and is highly extensible."
   s.description = ""

@@ -188,7 +188,7 @@ module Citrusbyte
 
         # Recreates the directory this file will be stored in.
         def recreate_directory
-          self.class.recreate_directory(dirname, milton_options) unless File.exists?(dirname)
+          self.class.recreate_directory(dirname, milton_options) unless File.exists?(dirname) || File.symlink?(dirname)
         end
         
         # Removes the containing directory from the filesystem (and hence the
