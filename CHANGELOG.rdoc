@@ -1,3 +1,9 @@
+== 0.2.3, released 2009-02-16
+
+* Added a symlink_aware_mkdir_p to FileUtils to actually fix problem w/ root
+  attachments path being a symlink.
+* Added specs to reproduce error and fix in attachment_spec.rb
+
 == 0.2.2, released 2009-02-16
 
 * Made recreate directories aware of symlinks to avoid trying to recreate the

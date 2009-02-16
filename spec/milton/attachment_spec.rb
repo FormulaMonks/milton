@@ -16,6 +16,44 @@ describe Attachment do
     end
   end
   
+  describe "creating attachment folder" do
+    before :all do
+      @output_path = File.join(File.dirname(__FILE__), '..', 'output')
+      raise "Failed to create #{File.join(@output_path, 'exists')}" unless FileUtils.mkdir_p(File.join(@output_path, 'exists'))
+      FileUtils.ln_s 'exists', File.join(@output_path, 'linked')
+      raise "Failed to symlink #{File.join(@output_path, 'linked')}" unless File.symlink?(File.join(@output_path, 'linked'))
+    end
+    
+    it "should create root path when root path does not exist" do    
+      Attachment.class_eval("is_uploadable :file_system_path => '#{File.join(@output_path, 'nonexistant')}'")
+      @attachment = Attachment.create :file => upload('milton.jpg')
+      
+      File.exists?(@attachment.path).should be_true
+      File.exists?(File.join(@output_path, 'nonexistant')).should be_true
+      @attachment.path.should =~ /nonexistant/
+    end
+    
+    it "should work when root path already exists" do
+      Attachment.class_eval("is_uploadable :file_system_path => '#{File.join(@output_path, 'exists')}'")
+      @attachment = Attachment.create :file => upload('milton.jpg')
+      
+      File.exists?(@attachment.path).should be_true
+      @attachment.path.should =~ /exists/
+    end
+    
+    it "should work when root path is a symlink" do
+      Attachment.class_eval("is_uploadable :file_system_path => '#{File.join(@output_path, 'linked')}'")
+      @attachment = Attachment.create :file => upload('milton.jpg')
+      
+      File.exists?(@attachment.path).should be_true
+      @attachment.path.should =~ /linked/
+    end
+    
+    after :all do
+      Attachment.class_eval("is_uploadable :file_system_path => '#{@output_path}'")
+    end
+  end
+  
   describe "being destroyed" do
     before :each do
       @attachment = Attachment.create :file => upload('milton.jpg')
