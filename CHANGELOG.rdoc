@@ -1,3 +1,9 @@
+== 0.2.4, released 2009-02-16
+
+* Got rid of symlink_aware_mkdir_p as it wasn't actually needed, problem was
+  caused by invalid symlinks in the first place, oops. Left specs as they are
+  still valid.
+
 == 0.2.3, released 2009-02-16
 
 * Added a symlink_aware_mkdir_p to FileUtils to actually fix problem w/ root

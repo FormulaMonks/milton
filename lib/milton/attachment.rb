@@ -1,6 +1,5 @@
 require 'ftools'
 require 'fileutils'
-require File.join(File.dirname(__FILE__), 'file_utils')
 
 module Citrusbyte
   module Milton
@@ -110,8 +109,8 @@ module Citrusbyte
       # Creates the given directory and sets it to the mode given in
       # options[:chmod]
       def recreate_directory(directory, options)
-        return true if File.exists?(directory) || File.symlink?(directory)
-        FileUtils.symlink_aware_mkdir_p(directory)
+        return true if File.exists?(directory)
+        FileUtils.mkdir_p(directory)
         File.chmod(options[:chmod], directory)
       end
         
@@ -192,7 +191,6 @@ module Citrusbyte
         # Also creates the root path where all attachments are stored if it
         # doesn't exist yet.
         def recreate_directory
-          self.class.recreate_directory(root_path, milton_options)
           self.class.recreate_directory(dirname, milton_options)
         end
         
