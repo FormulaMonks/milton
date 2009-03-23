@@ -1,19 +1,16 @@
 Milton
 ======
 
-Milton is an extensible attachment handling plugin that makes few
-assumptions but provides a lot of power.
+Milton is an upload-handling plugin for Rails that tries to make as few
+assumptions as possible while providing a lot of functionality.
 
 Description
 -----------
 
-<img src="http://github.com/citrusbyte/milton/raw/master/spec/fixtures/milton
-.jpg" style="float:left;margin-right:10px;"/>
-
-Milton is an asset handling plugin that assumes little and is highly
+Milton is an upload-handling plugin that assumes little and is highly
 extensible. Many similar plugins make assumptions about the type of
-things you'll be uploading and require some hacking when you want to,
-say, upload images with thumbnails as well as PDFs with previews.
+things you'll be uploading and require some hacking when you want to do
+something like upload images with thumbnails as well as PDFs with previews.
 Milton attempts to solve this by assuming nothing about what you'll be
 uploading and giving you, at the very least, a plugin for dealing with
 an underlying file-system.
@@ -22,16 +19,11 @@ You can then tack on extra functionality, like handling uploaded files
 (`is_uploadable`), or resizing images (`is_resizeable`) to certain types
 of assets.
 
-Milton also has a key architectural difference from other asset plugins
-that lends to its extensibility. Where other asset handlers tack tons
-of methods directly onto your model, Milton only tacks on a couple
-and instead has it's own underlying structure for dealing with the
-actual attached file. This allows you to have a simple and small API for
-extending Milton with your own functionality (think handling different
-types of files, alternate file stores, alternate image processors,
-etc...).
+Milton is built to be extensible by keeping pollution of your ActiveRecord
+model to a minimum, allowing you to extend Milton through a small and simple
+API rather than dealing with a giant module mixed into your classes.
 
-Handling uploads
+Handling Uploads
 ----------------
 
 Handling uploads is as simple as calling `is_uploadable` in your Asset
@@ -45,6 +37,8 @@ Your `Asset` model:
     class Asset < ActiveRecord::Base
       is_uploadable
     end
+
+**Note:** your underlying table (in this case `assets`) must have a string column called `filename`.
 
 Your new `Asset` form:
 
@@ -63,70 +57,122 @@ Your `AssetsController`:
 Resizing Images
 ---------------
 
+Milton creates resized versions of images on demand, as opposed to 
+attachment_fu and Paperclip which create the resized versions when the
+source file is uploaded. The resized versions are created with a consistent
+filename and saved to the file system, so they will only be created the first
+time they are asked for.
+
 Currently Milton relies on ImageMagick (but not RMagick!). Once you
 have ImageMagick installed, just add `is_resizeable` to your model in
-order to allow for image manipulation. Images are resized on demand and
-cached, as opposed to pre-sized on create.
+order to allow for image manipulation.
+
+    class Image < ActiveRecord::Base
+      is_uploadable
+      is_resizeable
+    end
+    
+**Note:** there is also a helper `is_image` which can be used to specify both
+`is_uploadable` and `is_resizeable`
+
+    class Image < ActiveRecord::Base
+      is_image
+    end
 
 Once your model has `is_resizeable` you can pass an options hash to the
 `#path` method to define how you want your resized version. The path to
-the resized version will be returned, and if no version has been created
-w/ the given options then it will be created as well.
-
-Note that to get a resized version, the `:size` option is required.
+the resized version will be returned (and if no version has been created
+w/ the given options it will be created).
 
 ### Example
 
-    @asset.path => .../000/000/000/001/milton.jpg
+    @image.path => .../000/000/000/001/milton.jpg
 
-    @asset.path(:size => '50x50') => .../000/000/000/001/milton.size_50x50.jpg
+    @image.path(:size => '50x50') => .../000/000/000/001/milton.size_50x50.jpg
 
-    @asset.path(:size => '50x50', :crop => true) => .../000/000/000/001/milton.size-50x50_crop-true.jpg
+    @image.path(:size => '50x50', :crop => true) => .../000/000/000/001/milton.size-50x50_crop-true.jpg
 
 ### Resizing Options
 
-Currently the only options supported are `:size` and `:crop`.
+**Note:** currently the only options supported are `:size` and `:crop`.
 
 `:size` takes a geometry string similar to other image-manipulation
 plugins (based off ImageMagick's geometry strings).
 
-`:size => '50x50'` will resize the larger dimension down to 50px and
-maintain aspect ratio (you can use `:crop` for forced zoom/cropping).
+`:size => '50x50'` will resize the larger dimension down to 50px and maintain aspect ratio (you 
+can use `:crop` for forced zoom/cropping).
 
-`:size => '50x'` will resize the width to 50px and maintain aspect
-ratio.
+`:size => '50x'` will resize the width to 50px and maintain aspect ratio.
 
-`:size => 'x50'` will resize the height to 50px and maintain aspect
-ratio.
+`:size => 'x50'` will resize the height to 50px and maintain aspect ratio.
 
-Then you can throw in `:crop` to get zoom/cropping functionality, so:
+Then you can throw in `:crop` to get zoom/cropping functionality:
 
-`:size => '50x50', :crop => true` will force a 50px x 50px output,
-cropping out the remains of the larger dimension. By default it uses a
-North/Center gravity. That means if the source image's height is greater
-than its width then the output width will be 50px and the pixels below
-50px will be cropped off the height. If the source image's width is
-greater than its height then the output height will be 50px and the
-pixels on either side of 50px will be cropped off the width. So it tries
-to crop to keep the upper-middle of the image.
+    @image.path(:size => '50x50', :crop => true)
+    
+This will create a 50px x 50px version of the image regardless of the source
+aspect-ratio. It will *not* distort the source image, rather it will resize the
+image as close to fitting as possible without distorting, then crop off the
+remainder.
 
-### Notes
+By default `:crop` uses a North/Center gravity -- so the remainder will be
+cropped from the bottom and equally from both sides.
+
+**Note:** the `:size` option is required when resizing.
+
+### Embedding Images
 
 `#path` will always return the full path to the image, in your views
 you probably want to refer to the "public" path -- the portion of the
 path from your `/public` folder up for embedding your images. For
 now there is a helper method that gets attached to your model called
-`#public_path` that simply gives you the path from `/public` on. You can
-use it like:
+`#public_path` that simply gives you the path from `public` on.
 
-    @asset.public_path(:size => '50x50') => 'assets/000/000/001/234/milton.jpg'
+    @asset.public_path(:size => '50x50') => '/assets/000/000/001/234/milton.jpg'
 
 As opposed to:
 
     @asset.path(:size => '50x50') => '/var/www/site/public/assets/000/000/001/234/milton.jpg'
 
+**Note:** if you use the `:file_system_path` option to upload your files to
+somewhere outside of your `public` folder this will no longer work. You can
+pass a different folder to `public_path` to use as an alternate base.
+
+    @asset.public_path(:size => '50x50', 'uploads')
+
+Options
+-------
+A few options can be passed to the `is_uploadable`/`is_resizeable` calls in your models.
+
+<dl>
+  <dt><code>:separator</code> (default <code>'.'</code>)</dt>
+  <dd>is the character used to separate the options from the filename in cached derivative files (i.e. resized images). It will be stripped from the filename of any incoming file.</dd>
+
+  <dt><code>:replacement</code> (default <code>'-'</code>)</dt>
+  <dd>is the character used to replace <code>:separator</code> after stripping it from the incoming filename.</dd>
+
+  <dt><code>:file_system_path</code> (default <code>&lt;RAILS_ROOT&gt;/public/&lt;table name&gt;</code>)</dt>
+  <dd>is the root path to where files are/will be stored on your file system. The partitioned portion of the path is then added onto this root to generate the full path. You can do some useful stuff with this like pulling your assets out of /public if you want them to be non-web-accessible.</dd>
+
+  <dt><code>:chmod</code> (default <code>0755</code>)</dt>
+  <dd>is the mode to set on on created folders and uploaded files.</dd>
+
+  <dt><code>:tempfile_path</code> (default <code>&lt;RAILS_ROOT&gt;/tmp/milton</code>)</dt>
+  <dd>is the path used for Milton's temporary storage (will be created if it doesn't already exist).</dd>
+</dl>
+
+**Note:** If you're using Capistrano for deployment remember to put `:file_system_path` path in `shared` and link it up on deploy so you don't lose your uploads between deployments!
+
+### Example
+
+    is_uplodable :chmod => 700, :file_system_path => File.join(Rails.root, 'uploads')
+
 Installation
 ------------
+
+### Gem
+
+    $ gem install citrusbyte-milton --source http://gems.github.com
 
 ###  Ruby on Rails gem plugin:
 
@@ -134,21 +180,15 @@ Add to your environment.rb:
 
     config.gem "citrusbyte-milton", :source => "http://gems.github.com", :lib => "milton"
 
-Then run `rake gems:install` to install the gem.
-
-    $ gem sources -a http://gems.github.com (you only have to do this once)
-    $ sudo gem install citrusbyte-milton
-
+Then run:
+    
+    $ rake gems:install
 
 ### Ruby on Rails plugin
 
     script/plugin install git://github.com/citrusbyte/milton.git
 
-### Gem
-
-    gem install citrusbyte-milton --source http://gems.github.com
-
-You also need to install ImageMagick if you want image resizing.
+You will also need to install ImageMagick to use image resizing.
 
 Dependencies
 ------------
@@ -157,9 +197,65 @@ Dependencies
 * Ruby on Rails (for now?)
 * A filesystem (more storage solutions coming soon)
 
-For Image manipulation (not required!)
+For image manipulation (not required!)
 
 * ImageMagick (more processors coming soon)
+
+Extended Usage Examples
+-----------------------
+
+### Basic User Avatar
+
+    class User < ActiveRecord::Base
+      has_one :avatar, :dependent => :destroy
+    end
+  
+    class Avatar < ActiveRecord::Base
+      is_image
+      belongs_to :user
+    end
+    
+Allow user to upload an avatar when creating
+
+    class UsersController < ActiveRecord::Base
+      def create
+        @user = User.new params[:user]
+        @user.avatar = Avatar.new(params[:avatar]) if params[:avatar] && params[:avatar][:file]
+        
+        if @user.save
+          ...
+        else
+          ...
+        end
+        
+        ...
+      end
+    end
+    
+Allow user to upload a new avatar, note that we don't care about updating files
+in this has_one case, we're just gonna set a new relationship (which will
+destroy the existing one)
+
+    class AvatarsController < ActiveRecord::Base
+      def create
+        @user = User.find params[:user_id]
+
+        # setting a has_one on a saved object saves the new related object
+        if @user.avatar = Avatar.new(params[:avatar])
+          ...
+        else
+          ...
+        end
+        
+        ...
+      end
+    end
+    
+User's profile snippet (in Haml)
+    
+    #profile
+      = image_tag(@user.avatar.public_path(:size => '100x100', :crop => true))
+      = @user.name
 
 License
 -------
