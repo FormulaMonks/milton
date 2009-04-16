@@ -46,7 +46,7 @@ module Citrusbyte
     
       module InstanceMethods 
         FILENAME_REGEX = /^[^\/\\]+$/
-      
+        
         def self.included(base)
           # Nasty rails 2.1 fix for callbacks
           base.define_callbacks *[:before_file_saved, :after_file_saved] if base.respond_to?(:define_callbacks)
@@ -54,28 +54,29 @@ module Citrusbyte
         
         def file=(file)
           return nil if file.nil? || file.size == 0
-          @upload           = UploadableFile.new(self, file)
+          @upload           = Upload.new(file, self.class.milton_options)
           self.filename     = @upload.filename
           self.size         = @upload.size if respond_to?(:size=)
           self.content_type = @upload.content_type if respond_to?(:content_type=)
         end
         
-        protected          
-          def save_uploaded_file
-            unless @upload.saved?
-              callback :before_file_saved
-              @upload.save
-              callback :after_file_saved
-            end
+        protected
+        
+        def save_uploaded_file
+          unless @upload.stored?
+            callback :before_file_saved
+            @upload.store(id)
+            callback :after_file_saved
           end
+        end
       end
     end
     
-    class UploadableFile < AttachableFile
-      attr_reader :content_type, :filename, :size
+    class Upload
+      attr_reader :content_type, :filename, :size, :options
 
       class << self
-        def write_to_temp_file(data_or_path, options)
+        def write_to_disk(data_or_path, options)
           FileUtils.mkdir_p(options[:tempfile_path]) unless File.exists?(options[:tempfile_path])
           
           tempfile = Tempfile.new("#{rand(Time.now.to_i)}", options[:tempfile_path])
@@ -93,32 +94,30 @@ module Citrusbyte
         end
       end
 
-      def initialize(attachment, data_or_path)
-        @has_been_saved = false
-        @content_type   = data_or_path.content_type
-        @filename       = AttachableFile.sanitize_filename(data_or_path.original_filename, attachment.class.milton_options) if respond_to?(:filename)
-        @tempfile       = UploadableFile.write_to_temp_file(data_or_path, attachment.class.milton_options)
-        @size           = File.size(self.temp_path)
-
-        super attachment, filename
+      def initialize(data_or_path, options)
+        @stored       = false
+        @tempfile     = self.class.write_to_disk(data_or_path, options)
+        @content_type = data_or_path.content_type
+        @filename     = Storage::Base.sanitize_filename(data_or_path.original_filename, options) if respond_to?(:filename)
+        @size         = File.size(self.temp_path)
+        @options      = options
       end
 
-      def saved?
-        @has_been_saved
+      def stored?
+        @stored
       end
 
-      def save
-        return true if self.saved?
-        recreate_directory
-        File.cp(temp_path, path)
-        File.chmod(milton_options[:chmod], path)
-        @has_been_saved = true
+      def store(id)
+        return true if stored?
+        Storage::DiskFile.create(filename, temp_path, options.merge(:id => id))
+        @stored = true
       end
 
-      protected      
-        def temp_path
-          @tempfile.respond_to?(:path) ? @tempfile.path : @tempfile.to_s
-        end
+      protected
+      
+      def temp_path
+        @tempfile.respond_to?(:path) ? @tempfile.path : @tempfile.to_s
+      end
     end
   end
 end

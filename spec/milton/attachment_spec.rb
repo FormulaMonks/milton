@@ -14,27 +14,31 @@ describe Attachment do
     it "should not overwrite Image's file_system_path setting with Attachment's" do
       Image.milton_options[:file_system_path].should eql('bar')
     end
+    
+    after :all do
+      Attachment.class_eval("is_uploadable :file_system_path => '#{output_path}'")
+      Image.class_eval("is_uploadable :file_system_path => '#{output_path}'")
+    end
   end
   
   describe "creating attachment folder" do
     before :all do
-      @output_path = File.join(File.dirname(__FILE__), '..', 'output')
-      raise "Failed to create #{File.join(@output_path, 'exists')}" unless FileUtils.mkdir_p(File.join(@output_path, 'exists'))
-      FileUtils.ln_s 'exists', File.join(@output_path, 'linked')
-      raise "Failed to symlink #{File.join(@output_path, 'linked')}" unless File.symlink?(File.join(@output_path, 'linked'))
+      raise "Failed to create #{File.join(output_path, 'exists')}" unless FileUtils.mkdir_p(File.join(output_path, 'exists'))
+      FileUtils.ln_s 'exists', File.join(output_path, 'linked')
+      raise "Failed to symlink #{File.join(output_path, 'linked')}" unless File.symlink?(File.join(output_path, 'linked'))
     end
     
     it "should create root path when root path does not exist" do    
-      Attachment.class_eval("is_uploadable :file_system_path => '#{File.join(@output_path, 'nonexistant')}'")
+      Attachment.class_eval("is_uploadable :file_system_path => '#{File.join(output_path, 'nonexistant')}'")
       @attachment = Attachment.create :file => upload('milton.jpg')
       
       File.exists?(@attachment.path).should be_true
-      File.exists?(File.join(@output_path, 'nonexistant')).should be_true
+      File.exists?(File.join(output_path, 'nonexistant')).should be_true
       @attachment.path.should =~ /nonexistant/
     end
     
     it "should work when root path already exists" do
-      Attachment.class_eval("is_uploadable :file_system_path => '#{File.join(@output_path, 'exists')}'")
+      Attachment.class_eval("is_uploadable :file_system_path => '#{File.join(output_path, 'exists')}'")
       @attachment = Attachment.create :file => upload('milton.jpg')
       
       File.exists?(@attachment.path).should be_true
@@ -42,15 +46,15 @@ describe Attachment do
     end
     
     it "should work when root path is a symlink" do
-      Attachment.class_eval("is_uploadable :file_system_path => '#{File.join(@output_path, 'linked')}'")
+      Attachment.class_eval("is_uploadable :file_system_path => '#{File.join(output_path, 'linked')}'")
       @attachment = Attachment.create :file => upload('milton.jpg')
-      
+
       File.exists?(@attachment.path).should be_true
       @attachment.path.should =~ /linked/
     end
     
     after :all do
-      Attachment.class_eval("is_uploadable :file_system_path => '#{@output_path}'")
+      Attachment.class_eval("is_uploadable :file_system_path => '#{output_path}'")
     end
   end
   
@@ -98,7 +102,7 @@ describe Attachment do
     end
     
     it "should be stored in a partitioned folder based on its id" do
-      @image.path.should =~ /^.*\/#{Citrusbyte::Milton::AttachableFile.partition(@image.id)}\/#{@image.filename}$/
+      @image.path.should =~ /^.*\/0*#{@image.id}\/#{@image.filename}$/
     end
   end
   
