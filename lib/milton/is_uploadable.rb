@@ -1,3 +1,5 @@
+require 'lib/milton/milton_tempfile'
+
 module Citrusbyte
   module Milton
     module IsUploadable
@@ -74,31 +76,12 @@ module Citrusbyte
     
     class Upload
       attr_reader :content_type, :filename, :size, :options
-
-      class << self
-        def write_to_disk(data_or_path, options)
-          FileUtils.mkdir_p(options[:tempfile_path]) unless File.exists?(options[:tempfile_path])
-          
-          tempfile = Tempfile.new("#{rand(Time.now.to_i)}", options[:tempfile_path])
-          
-          if data_or_path.is_a?(StringIO)
-            tempfile.binmode
-            tempfile.write data_or_path.read
-            tempfile.close
-          else
-            tempfile.close
-            FileUtils.cp((data_or_path.respond_to?(:path) ? data_or_path.path : data_or_path), tempfile.path)
-          end
-          
-          tempfile
-        end
-      end
-
+      
       def initialize(data_or_path, options)
         @stored       = false
-        @tempfile     = self.class.write_to_disk(data_or_path, options)
+        @tempfile     = MiltonTempfile.create(data_or_path, options[:tempfile_path])
         @content_type = data_or_path.content_type
-        @filename     = Storage::Base.sanitize_filename(data_or_path.original_filename, options) if respond_to?(:filename)
+        @filename     = Storage::StoredFile.sanitize_filename(data_or_path.original_filename, options) if respond_to?(:filename)
         @size         = File.size(self.temp_path)
         @options      = options
       end

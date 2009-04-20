@@ -30,8 +30,12 @@ describe Citrusbyte::Milton::IsUploadable do
       Attachment.class_eval("is_uploadable(:file_system_path => 'foo')")
       Attachment.milton_options[:file_system_path].should eql('foo')
     end
-  end
     
+    after :all do
+      Attachment.class_eval("is_uploadable :file_system_path => '#{output_path}'")
+    end
+  end
+  
   describe "class extensions" do
     describe "class methods" do
       it "should add before_file_saved callback" do

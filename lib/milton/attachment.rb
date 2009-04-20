@@ -56,7 +56,7 @@ module Citrusbyte
         # TODO: change the filename on the underlying file system on save so as
         # not to orphan the file
         def filename=(name)
-          write_attribute :filename, Storage::Base.sanitize_filename(name, self.milton_options)
+          write_attribute :filename, Storage::StoredFile.sanitize_filename(name, self.milton_options)
         end
 
         # Returns the content_type of this attachment, tries to determine it if

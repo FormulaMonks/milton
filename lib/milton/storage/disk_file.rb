@@ -1,10 +1,10 @@
-require File.join(File.dirname(__FILE__), 'base')
+require File.join(File.dirname(__FILE__), 'stored_file')
 
 module Citrusbyte
   module Milton
     module Storage
       # How Milton deals with a file stored on disk...
-      class DiskFile < Base
+      class DiskFile < StoredFile
         class << self
           # Creates the given directory and sets it to the mode given in
           # options[:chmod]
@@ -12,16 +12,6 @@ module Citrusbyte
             return true if File.exists?(directory)
             FileUtils.mkdir_p(directory)
             File.chmod(options[:chmod], directory)
-          end
-          
-          def create(filename, source, options)
-            file = new(filename, options)
-            
-            recreate_directory(file.dirname, options)
-            File.cp(source, file.path)
-            File.chmod(options[:chmod], file.path)
-            
-            file
           end
         end
 
@@ -40,6 +30,13 @@ module Citrusbyte
         # Returns true if the file exists on the underlying file system.
         def exists?
           File.exist?(path)
+        end
+        
+        # Writes the given source file to this file's path.
+        def store(source)
+          self.class.recreate_directory(dirname, options)
+          File.cp(source, path)
+          File.chmod(options[:chmod], path)
         end
         
         # Removes the file from the underlying file system and any derivatives of

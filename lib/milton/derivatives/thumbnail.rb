@@ -1,10 +1,8 @@
 module Citrusbyte
   module Milton
     class Thumbnail < Derivative
-      def path(resize=true)
-        path = super()
-        return path unless resize
-        self.resize and return path unless File.exists?(path)
+      def path
+        resize and return super() unless exists?
       end
     
       protected
@@ -13,15 +11,21 @@ module Citrusbyte
       # 640-wide version of the image (so you're not generating tiny
       # thumbnails from an 8-megapixel upload)
       def source
-        image.width > 640 && Image.from_geometry(options[:size]).width < 640 ? Thumbnail.new(@file, { :size => '640x' }).path : @file.path
+        image.width > 640 && Image.from_geometry(options[:size]).width < 640 ? Thumbnail.new(@source, { :size => '640x' }).path : @source.path
+      end
+      
+      # The filename to which the resized thumbnail will be saved -- before
+      # being stored permanently
+      def destination
+        @destination ||= MiltonTempfile.path(@source.options[:tempfile_path])
       end
       
       # Returns and memoizes an Image initialized from the file we're making a
       # thumbnail of
       def image
-        @image ||= Image.from_path(@file.path)
+        @image ||= Image.from_path(@source.path)
       end
-      
+            
       def resize
         raise "target size must be specified for resizing" unless options.has_key?(:size)
         
@@ -31,7 +35,9 @@ module Citrusbyte
           conversion_options = %Q(-gravity #{crop.gravity} -crop #{crop.cropping_geometry})
         end
         
-        %x{convert -geometry #{size || options[:size]} #{source} #{conversion_options || ''} +repage "#{path(false)}"}
+        %x{convert -geometry #{size || options[:size]} #{source} #{conversion_options || ''} +repage "#{destination}"}
+        
+        file.store(destination)
       end
     end
     

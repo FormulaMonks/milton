@@ -25,6 +25,8 @@ module Citrusbyte
 
         # Given a filename (presumably with options embedded in it) parses out
         # the options and returns them as a hash.
+        #
+        # FIXME: this is based on old global options and is probably busted
         def extract_options_from(filename)
           File.basename(filename, File.extname(filename))[(filename.rindex(AttachableFile.options[:separator]) + 1)..-1]
         end
@@ -39,40 +41,36 @@ module Citrusbyte
       attr_reader :options
   
       # Instantiate a new Derivative:
-      # * +file+: a reference to the Storage::File this will be a Derivative of
+      # * +source+: a reference to the Storage::StoredFile this will be a Derivative of
       # * +options+: [optional] options to generate the Derivative using
-      def initialize(file, options={})
-        @file    = file
+      def initialize(source, options={})
+        @source  = source
         @options = options.is_a?(String) ? self.class.options_from(options) : options
       end
   
       # The resulting filename of this Derivative with embedded options.
       def filename
-        filename  = @file.path
+        filename  = @source.path
         append    = options.collect{ |k, v| "#{k}=#{v}" }.sort.join('_')
         extension = File.extname(filename)
     
-        File.basename(filename, extension) + (append.blank? ? '' : "#{@file.options[:separator]}#{append}") + extension
+        File.basename(filename, extension) + (append.blank? ? '' : "#{@source.options[:separator]}#{append}") + extension
       end
   
       # The full path and filename to this Derivative.
       def path
-        File.join(dirname, filename)
+        file.path
       end
       
-      def to_s
-        path  
-      end
-  
-      # Returns true if the file resulting from this Derivative exists.
+      # Returns true if this Derivative has already been generated and stored.
       def exists?
-        File.exists?(path)
+        file.exists?
       end
       
       protected
       
-      def dirname
-        File.dirname(@file.path)
+      def file
+        @file ||= Storage::DiskFile.new(filename, @source.options.merge(:id => @source.id))
       end
     end
   end

@@ -1,7 +1,7 @@
 module Citrusbyte
   module Milton
     module Storage
-      class Base
+      class StoredFile
         class << self
           # Sanitizes the given filename, removes pathnames and the special chars
           # needed for options seperation for derivatives
@@ -9,6 +9,12 @@ module Citrusbyte
             File.basename(filename, File.extname(filename)).gsub(/^.*(\\|\/)/, '').
               gsub(/[^\w]|#{Regexp.escape(options[:separator])}/, options[:replacement]).
               strip + File.extname(filename)
+          end
+
+          def create(filename, source, options)
+            file = new(filename, options)
+            file.store(source)
+            file
           end
         end
                 
