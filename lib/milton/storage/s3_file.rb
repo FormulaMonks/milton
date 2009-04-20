@@ -19,14 +19,13 @@ module Citrusbyte
         end
         
         def store(source)
+          Rails.logger.info "[milton] storing #{source} to S3 at #{bucket}:#{path}"
           # send the given source file to the S3 bucket given in options and
           # write it to the given filename under dirname
           begin
             key = bucket.key(path)
-            key.data = file
-            key.put(nil, {'Content-type' => instance_read(:content_type)})
-          rescue RightAws::AwsError => e
-            raise
+            key.data = File.read(source)
+            key.put(nil, {'Content-type' => file.content_type})
           end
         end
         
