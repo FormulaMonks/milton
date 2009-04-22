@@ -34,7 +34,7 @@ module Citrusbyte
         
         # Writes the given source file to this file's path.
         def store(source)
-          Milton.log 'DiskFile', "storing #{source} to disk at #{path}"
+          Milton.log "storing #{source} to disk at #{path}"
           self.class.recreate_directory(dirname, options)
           File.cp(source, path)
           File.chmod(options[:storage_options][:chmod], path)
@@ -43,7 +43,7 @@ module Citrusbyte
         # Removes the file from the underlying file system and any derivatives of
         # the file.
         def destroy
-          Milton.log "DiskFile", "destroying path #{dirname}"
+          Milton.log "destroying path #{dirname}"
           FileUtils.rm_rf dirname if File.exists?(dirname)
         end
 

@@ -55,35 +55,36 @@ module Citrusbyte
     #     filename == basename + (extension ? '.' + extension : '')
     #
     
+    def log(message)
+      require 'ruby-debug';debugger;
+      Rails.logger.info("[milton] CALLER GOES HERE: #{message}")
+    end
+    module_function :log
+    
+    def syscall(command)
+      log(caller, "executing #{command}")
+      %x{#{command}}
+    end
+    module_function :syscall
+    
     def self.included(base)
       base.extend Citrusbyte::Milton::BaseMethods
       base.extend Citrusbyte::Milton::IsUploadable::IsMethods
       base.extend Citrusbyte::Milton::IsResizeable::IsMethods
       base.extend Citrusbyte::Milton::IsImage::IsMethods
     end
-    
-    def log(caller, message)
-      Rails.logger.info("[milton] #{caller}: #{message}")
-    end
-    module_function :log
-    
-    def syscall(caller, command)
-      log(caller, "executing #{command}")
-      %x{#{command}}
-    end
-    module_function :syscall
-    
+        
     module BaseMethods
       protected
-        # The attachment methods give the core of Milton's file-handling, so
-        # various extensions can use this when they're included to make sure
-        # that the core attachment methods are available
-        def ensure_attachment_methods(options={})
-          unless included_modules.include?(Citrusbyte::Milton::Attachment)
-            include Citrusbyte::Milton::Attachment
-            has_attachment_methods(options)
-          end
+      # The attachment methods give the core of Milton's file-handling, so
+      # various extensions can use this when they're included to make sure
+      # that the core attachment methods are available
+      def ensure_attachment_methods(options={})
+        unless included_modules.include?(Citrusbyte::Milton::Attachment)
+          include Citrusbyte::Milton::Attachment
+          has_attachment_methods(options)
         end
+      end
     end
   end
 end

@@ -1,5 +1,3 @@
-require 'lib/milton/tempfile'
-
 module Citrusbyte
   module Milton
     module IsUploadable

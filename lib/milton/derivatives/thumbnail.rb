@@ -2,7 +2,9 @@ module Citrusbyte
   module Milton
     class Thumbnail < Derivative
       def path
-        resize and return super() unless exists?
+        returning super do
+          resize unless exists?
+        end
       end
     
       protected
@@ -25,13 +27,19 @@ module Citrusbyte
         
         destination = Milton::Tempfile.path(@source.options[:tempfile_path], Milton::File.extension(@source.filename))
         
+        # TODO: determine if this is neccessary or was just a problem w/ the
+        # way we were calling convert
+        # convert can be destructive to the original image in certain failure
+        # cases, so copy it to a tempfile first before processing
+        # source      = Milton::Tempfile.create(self.source, @source.options[:tempfile_path]).path
+        
         if options[:crop]
           crop = CropCalculator.new(image, Image.from_geometry(options[:size]))
           size = crop.resizing_geometry
           conversion_options = %Q(-gravity #{crop.gravity} -crop #{crop.cropping_geometry})
         end
         
-        Milton.syscall('Thumbnail', %Q{convert -geometry #{size || options[:size]} #{source} #{conversion_options || ''} +repage "#{destination}"})
+        Milton.syscall('Thumbnail', %Q{convert #{source} -geometry #{size || options[:size]} #{conversion_options || ''} +repage "#{destination}"})
         
         file.store(destination)
       end

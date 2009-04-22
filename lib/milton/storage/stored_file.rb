@@ -20,7 +20,7 @@ module Citrusbyte
           # Returns the adapter class specified by the given type (by naming
           # convention)
           # 
-          #     Storage::StoredFile.adapter(:s3) => Storage::S3File   
+          #     Storage::StoredFile.adapter(:s3) => Storage::S3File
           #     Storage::StoredFile.adapter(:disk) => Storage::DiskFile
           # 
           def adapter(type)
