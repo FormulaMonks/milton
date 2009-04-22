@@ -12,7 +12,7 @@ end
 Spec::Runner.configure do |config|
   # have to set Test::Unit::TestCase.fixture_path until RSpec is fixed
   # (config.fixture_path seems to be ignored w/ Rails 2.2.2/Rspec 1.1.12)
-  config.fixture_path = Test::Unit::TestCase.fixture_path = File.join(File.dirname(__FILE__), 'fixtures/')
+  config.fixture_path = ActiveSupport::TestCase.fixture_path = File.join(File.dirname(__FILE__), 'fixtures/')
   
   # remove files created from previous spec run, happens before instead of
   # after so you can view them after you run the specs
@@ -20,7 +20,7 @@ Spec::Runner.configure do |config|
 end
 
 def upload(file, type='image/jpg')
-  fixture_file_upload file, type
+  ActionController::TestUploadedFile.new(ActionController::TestCase.fixture_path + file, type)
 end
 
 class Attachment < ActiveRecord::Base

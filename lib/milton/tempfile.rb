@@ -1,3 +1,5 @@
+require 'tempfile'
+
 module Citrusbyte
   module Milton
     # For lack of a better name, a MiltonTempfile adds some helpful
