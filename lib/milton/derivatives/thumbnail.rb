@@ -39,7 +39,7 @@ module Citrusbyte
           conversion_options = %Q(-gravity #{crop.gravity} -crop #{crop.cropping_geometry})
         end
         
-        Milton.syscall('Thumbnail', %Q{convert #{source} -geometry #{size || options[:size]} #{conversion_options || ''} +repage "#{destination}"})
+        Milton.syscall(%Q{convert #{source} -geometry #{size || options[:size]} #{conversion_options || ''} +repage "#{destination}"})
         
         file.store(destination)
       end
@@ -59,7 +59,7 @@ module Citrusbyte
         # Raises a MissingFileError if the given path could not be identify'd
         # by ImageMagick (resulting in a height and width).
         def from_path(path)
-          raise Citrusbyte::Milton::MissingFileError.new("Could not identify #{path} as an image, does the file exist?") unless Milton.syscall('Thumbnail', "identify #{path}") =~ /.*? (\d+)x(\d+)\+\d+\+\d+/
+          raise Citrusbyte::Milton::MissingFileError.new("Could not identify #{path} as an image, does the file exist?") unless Milton.syscall("identify #{path}") =~ /.*? (\d+)x(\d+)\+\d+\+\d+/
           new($1, $2)
         end
 

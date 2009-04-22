@@ -18,12 +18,12 @@ module Citrusbyte
         end
         
         def store(source)
-          Milton.log "S3File", "storing #{source} to #{path}"
+          Milton.log "storing #{source} to #{path}"
           bucket.put(key, File.open(source), {}, 'public-read')
         end
         
         def destroy
-          Milton.log "S3File", "destroying #{path}"
+          Milton.log "destroying #{path}"
           bucket.key(key).try(:delete)
         end
         

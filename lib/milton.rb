@@ -55,14 +55,19 @@ module Citrusbyte
     #     filename == basename + (extension ? '.' + extension : '')
     #
     
-    def log(message)
-      require 'ruby-debug';debugger;
-      Rails.logger.info("[milton] CALLER GOES HERE: #{message}")
+    def called_by
+      caller[1].gsub(/.*\/(.*):in (.*)/, "\\1:\\2")
+    end
+    module_function :called_by
+    
+    def log(message, invoker=nil)
+      invoker ||= Milton.called_by
+      Rails.logger.info("[milton] #{invoker}: #{message}")
     end
     module_function :log
     
     def syscall(command)
-      log(caller, "executing #{command}")
+      log("executing #{command}", Milton.called_by)
       %x{#{command}}
     end
     module_function :syscall
