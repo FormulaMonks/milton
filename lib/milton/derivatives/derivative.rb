@@ -25,10 +25,8 @@ module Citrusbyte
 
         # Given a filename (presumably with options embedded in it) parses out
         # the options and returns them as a hash.
-        #
-        # FIXME: this is based on old global options and is probably busted
-        def extract_options_from(filename)
-          File.basename(filename, File.extname(filename))[(filename.rindex(AttachableFile.options[:separator]) + 1)..-1]
+        def extract_options_from(filename, options)
+          File.basename(filename, File.extname(filename))[(filename.rindex(options[:separator]) + 1)..-1]
         end
         
         # Creates a new Derivative from the given filename by extracting the
@@ -42,7 +40,7 @@ module Citrusbyte
   
       # Instantiate a new Derivative:
       # * +source+: a reference to the Storage::StoredFile this will be a Derivative of
-      # * +options+: [optional] options to generate the Derivative using
+      # * +options+: options to generate the Derivative using
       def initialize(source, options={})
         @source  = source
         @options = options.is_a?(String) ? self.class.options_from(options) : options
@@ -70,7 +68,7 @@ module Citrusbyte
       protected
       
       def file
-        @file ||= Storage::DiskFile.new(filename, @source.options.merge(:id => @source.id))
+        @file ||= @source.class.new(filename, @source.options.merge(:id => @source.id))
       end
     end
   end

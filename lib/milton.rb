@@ -2,6 +2,8 @@ require 'milton/attachment'
 require 'milton/is_image'
 require 'milton/is_resizeable'
 require 'milton/is_uploadable'
+require 'milton/tempfile'
+require 'milton/file'
 
 module Citrusbyte
   module Milton
@@ -59,6 +61,17 @@ module Citrusbyte
       base.extend Citrusbyte::Milton::IsResizeable::IsMethods
       base.extend Citrusbyte::Milton::IsImage::IsMethods
     end
+    
+    def log(caller, message)
+      Rails.logger.info("[milton] #{caller}: #{message}")
+    end
+    module_function :log
+    
+    def syscall(caller, command)
+      log(caller, "executing #{command}")
+      %x{#{command}}
+    end
+    module_function :syscall
     
     module BaseMethods
       protected

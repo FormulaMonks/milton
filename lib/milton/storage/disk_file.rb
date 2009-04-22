@@ -11,7 +11,7 @@ module Citrusbyte
           def recreate_directory(directory, options)
             return true if File.exists?(directory)
             FileUtils.mkdir_p(directory)
-            File.chmod(options[:chmod], directory)
+            File.chmod(options[:storage_options][:chmod], directory)
           end
         end
 
@@ -37,7 +37,7 @@ module Citrusbyte
           Rails.logger.info "[milton] storing #{source} to disk at #{path}"
           self.class.recreate_directory(dirname, options)
           File.cp(source, path)
-          File.chmod(options[:chmod], path)
+          File.chmod(options[:storage_options][:chmod], path)
         end
         
         # Removes the file from the underlying file system and any derivatives of
@@ -67,7 +67,7 @@ module Citrusbyte
 
         # The full path to the root of where files will be stored on disk.
         def root_path
-          options[:file_system_path]
+          options[:storage_options][:root]
         end
       end
     end

@@ -5,7 +5,7 @@ module Citrusbyte
     describe Thumbnail do
       describe "building the filename from options" do
         before :each do
-          @file = Storage::DiskFile.new('milton.jpg', :file_system_path => output_path, :separator => '.')
+          @file = Storage::DiskFile.new('milton.jpg', :id => 1, :storage_options => { :root => output_path }, :separator => '.')
         end
 
         it "should raise unless a size is given" do

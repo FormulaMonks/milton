@@ -24,9 +24,9 @@ def upload(file, type='image/jpg')
 end
 
 class Attachment < ActiveRecord::Base
-  is_uploadable :file_system_path => output_path
+  is_uploadable :storage_options => { :root => output_path }
 end
 
 class Image < ActiveRecord::Base
-  is_image :file_system_path => output_path
+  is_image :storage_options => { :root => output_path }
 end

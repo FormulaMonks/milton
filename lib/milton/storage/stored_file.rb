@@ -10,19 +10,27 @@ module Citrusbyte
               gsub(/[^\w]|#{Regexp.escape(options[:separator])}/, options[:replacement]).
               strip + File.extname(filename)
           end
-
+          
           def create(filename, source, options)
             file = new(filename, options)
             file.store(source)
             file
           end
+          
+          # Returns the adapter class specified by the given type (by naming
+          # convention)
+          # 
+          #     Storage::StoredFile.adapter(:s3) => Storage::S3File   
+          #     Storage::StoredFile.adapter(:disk) => Storage::DiskFile
+          # 
+          def adapter(type)
+            "Citrusbyte::Milton::Storage::#{type.to_s.classify}File".constantize
+          end
         end
                 
         attr_accessor :filename, :id, :options
 
-        # options...
-        #   :file_system_path
-        #   :chmod
+        # TODO: id should be another param, not given in options
         def initialize(filename, options)
           self.filename = filename
           self.id       = options.delete(:id)

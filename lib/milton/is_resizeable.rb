@@ -11,7 +11,7 @@ module Citrusbyte
         def is_resizeable(options={})
           ensure_attachment_methods options
 
-          self.milton_options.merge!(options)
+          self.milton_options.deep_merge!(options)
 
           include Citrusbyte::Milton::IsResizeable::InstanceMethods
         end

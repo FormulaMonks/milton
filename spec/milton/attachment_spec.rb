@@ -3,21 +3,21 @@ require File.dirname(__FILE__) + '/../spec_helper'
 describe Attachment do
   describe "setting options" do
     before :each do
-      Attachment.class_eval("is_uploadable :file_system_path => 'foo'")
-      Image.class_eval("is_uploadable :file_system_path => 'bar'")
+      Attachment.class_eval("is_uploadable :storage_options => { :root => 'foo' }")
+      Image.class_eval("is_uploadable :storage_options => { :root => 'bar' }")
     end
     
-    it "should not overwrite Attachment's file_system_path setting with Image's" do
-      Attachment.milton_options[:file_system_path].should eql('foo')
+    it "should not overwrite Attachment's root setting with Image's" do
+      Attachment.milton_options[:storage_options][:root].should eql('foo')
     end
 
-    it "should not overwrite Image's file_system_path setting with Attachment's" do
-      Image.milton_options[:file_system_path].should eql('bar')
+    it "should not overwrite Image's root setting with Attachment's" do
+      Image.milton_options[:storage_options][:root].should eql('bar')
     end
     
     after :all do
-      Attachment.class_eval("is_uploadable :file_system_path => '#{output_path}'")
-      Image.class_eval("is_uploadable :file_system_path => '#{output_path}'")
+      Attachment.class_eval("is_uploadable :storage_options => { :root => '#{output_path}' }")
+      Image.class_eval("is_uploadable :storage_options => { :root => '#{output_path}' }")
     end
   end
   
@@ -29,7 +29,7 @@ describe Attachment do
     end
     
     it "should create root path when root path does not exist" do    
-      Attachment.class_eval("is_uploadable :file_system_path => '#{File.join(output_path, 'nonexistant')}'")
+      Attachment.class_eval("is_uploadable :storage_options => { :root => '#{File.join(output_path, 'nonexistant')}' }")
       @attachment = Attachment.create :file => upload('milton.jpg')
       
       File.exists?(@attachment.path).should be_true
@@ -38,7 +38,7 @@ describe Attachment do
     end
     
     it "should work when root path already exists" do
-      Attachment.class_eval("is_uploadable :file_system_path => '#{File.join(output_path, 'exists')}'")
+      Attachment.class_eval("is_uploadable :storage_options => { :root => '#{File.join(output_path, 'exists')}' }")
       @attachment = Attachment.create :file => upload('milton.jpg')
       
       File.exists?(@attachment.path).should be_true
@@ -46,7 +46,7 @@ describe Attachment do
     end
     
     it "should work when root path is a symlink" do
-      Attachment.class_eval("is_uploadable :file_system_path => '#{File.join(output_path, 'linked')}'")
+      Attachment.class_eval("is_uploadable :storage_options => { :root => '#{File.join(output_path, 'linked')}' }")
       @attachment = Attachment.create :file => upload('milton.jpg')
 
       File.exists?(@attachment.path).should be_true
@@ -54,7 +54,7 @@ describe Attachment do
     end
     
     after :all do
-      Attachment.class_eval("is_uploadable :file_system_path => '#{output_path}'")
+      Attachment.class_eval("is_uploadable :storage_options => { :root => '#{output_path}' }")
     end
   end
   

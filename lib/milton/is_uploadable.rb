@@ -1,4 +1,4 @@
-require 'lib/milton/milton_tempfile'
+require 'lib/milton/tempfile'
 
 module Citrusbyte
   module Milton
@@ -8,7 +8,7 @@ module Citrusbyte
       end
 
       module IsMethods
-        def is_uploadable(options = {})          
+        def is_uploadable(options = {})
           # TODO: implement size validations
           # options[:min_size]      ||= 1
           # options[:max_size]      ||= 4.megabytes
@@ -16,9 +16,7 @@ module Citrusbyte
           
           ensure_attachment_methods options
           
-          options[:tempfile_path] ||= File.join(RAILS_ROOT, "tmp", "milton")
-          
-          self.milton_options.merge!(options)
+          self.milton_options.deep_merge!(options)
 
           after_create :save_uploaded_file
 
@@ -79,7 +77,7 @@ module Citrusbyte
       
       def initialize(data_or_path, options)
         @stored       = false
-        @tempfile     = MiltonTempfile.create(data_or_path, options[:tempfile_path])
+        @tempfile     = Milton::Tempfile.create(data_or_path, options[:tempfile_path])
         @content_type = data_or_path.content_type
         @filename     = Storage::StoredFile.sanitize_filename(data_or_path.original_filename, options) if respond_to?(:filename)
         @size         = File.size(self.temp_path)
@@ -92,7 +90,7 @@ module Citrusbyte
 
       def store(id)
         return true if stored?
-        Storage::DiskFile.create(filename, temp_path, options.merge(:id => id))
+        Storage::StoredFile.adapter(options[:storage]).create(filename, temp_path, options.merge(:id => id))
         @stored = true
       end
 

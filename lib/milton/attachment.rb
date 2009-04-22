@@ -24,20 +24,24 @@ module Citrusbyte
         
         def has_attachment_methods(options={})
           require_column 'filename', "Milton requires a filename column on #{class_name} table"
-          
+
           # character used to seperate a filename from its derivative options, this
           # character will be stripped from all incoming filenames and replaced by
           # replacement
           options[:separator]        ||= '.'
           options[:replacement]      ||= '-'
-          
-          # root of where the underlying files are stored (or will be stored)
-          # on the file system
-          options[:file_system_path] ||= File.join(RAILS_ROOT, "public", table_name)
-          
-          # mode to set on stored files and created directories
-          options[:chmod]            ||= 0755
-          
+          options[:tempfile_path]    ||= File.join(Rails.root, "tmp", "milton")
+          options[:storage]          ||= :disk
+          options[:storage_options]  ||= {}
+
+          if options[:storage] == :disk
+            # root of where the underlying files are stored (or will be stored)
+            # on the file system
+            options[:storage_options][:root]  ||= File.join(Rails.root, "public", table_name)
+            # mode to set on stored files and created directories
+            options[:storage_options][:chmod] ||= 0755
+          end
+                              
           self.milton_options.merge!(options)
           
           validates_presence_of :filename
@@ -98,7 +102,7 @@ module Citrusbyte
         # i.e. 
         #   have attached_file return a ResizeableFile, or a TranscodableFile
         def attached_file
-          @attached_file ||= Storage::DiskFile.new(filename, self.class.milton_options.merge(:id => id))
+          @attached_file ||= Storage::StoredFile.adapter(self.class.milton_options[:storage]).new(filename, self.class.milton_options.merge(:id => id))
         end
         
         # Clean the file from the filesystem

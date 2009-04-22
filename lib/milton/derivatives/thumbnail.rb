@@ -14,12 +14,6 @@ module Citrusbyte
         image.width > 640 && Image.from_geometry(options[:size]).width < 640 ? Thumbnail.new(@source, { :size => '640x' }).path : @source.path
       end
       
-      # The filename to which the resized thumbnail will be saved -- before
-      # being stored permanently
-      def destination
-        @destination ||= MiltonTempfile.path(@source.options[:tempfile_path])
-      end
-      
       # Returns and memoizes an Image initialized from the file we're making a
       # thumbnail of
       def image
@@ -29,13 +23,15 @@ module Citrusbyte
       def resize
         raise "target size must be specified for resizing" unless options.has_key?(:size)
         
+        destination = Milton::Tempfile.path(@source.options[:tempfile_path], Milton::File.extension(@source.filename))
+        
         if options[:crop]
           crop = CropCalculator.new(image, Image.from_geometry(options[:size]))
           size = crop.resizing_geometry
           conversion_options = %Q(-gravity #{crop.gravity} -crop #{crop.cropping_geometry})
         end
         
-        %x{convert -geometry #{size || options[:size]} #{source} #{conversion_options || ''} +repage "#{destination}"}
+        Milton.syscall('Thumbnail', %Q{convert -geometry #{size || options[:size]} #{source} #{conversion_options || ''} +repage "#{destination}"})
         
         file.store(destination)
       end

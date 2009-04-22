@@ -4,50 +4,45 @@ require 'right_aws'
 module Citrusbyte
   module Milton
     module Storage
-      class S3File < StoredFile        
+      class S3File < StoredFile
         def path
-          # the URL to the file stored on S3
-          File.join(dirname, filename)
+          "http://#{bucket}.s3.amazonaws.com/#{key}"
         end
-
+        
         def dirname
           id
         end
 
         def exists?
-          bucket.key(path) ? true : false
+          bucket.key(key).exists?
         end
         
         def store(source)
-          Rails.logger.info "[milton] storing #{source} to S3 at #{bucket}:#{path}"
-          # send the given source file to the S3 bucket given in options and
-          # write it to the given filename under dirname
-          begin
-            key = bucket.key(path)
-            key.data = File.read(source)
-            key.put(nil, {'Content-type' => file.content_type})
-          end
+          Milton.log "S3File", "storing #{source} to #{path}"
+          bucket.put(key, File.open(source), {}, 'public-read')
         end
         
         def destroy
-          # destroy the file
-          begin
-            if file = bucket.key(path)
-              file.delete
-            end
-          rescue RightAws::AwsError
-            # Ignore this.
-          end
+          Milton.log "S3File", "destroying #{path}"
+          bucket.key(key).try(:delete)
         end
         
         protected
 
+        def key
+          "#{dirname}/#{filename}"
+        end
+
         def s3
-          @s3 ||= RightAws::S3.new(options[:access_key_id], options[:secret_access_key])
+          @s3 ||= RightAws::S3.new(
+            options[:storage_options][:access_key_id], 
+            options[:storage_options][:secret_access_key], 
+            { :protocol => 'http', :port => 80, :logger => Rails.logger }
+          )
         end
         
         def bucket
-          @bucket ||= s3.bucket(options[:bucket], true, 'public-read')
+          @bucket ||= s3.bucket(options[:storage_options][:bucket], true, 'public-read')
         end
       end
     end
