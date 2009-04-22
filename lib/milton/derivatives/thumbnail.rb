@@ -51,7 +51,7 @@ module Citrusbyte
         # Raises a MissingFileError if the given path could not be identify'd
         # by ImageMagick (resulting in a height and width).
         def from_path(path)
-          raise Citrusbyte::Milton::MissingFileError.new("Could not identify #{path} as an image, does the file exist?") unless `identify #{path}` =~ /.*? (\d+)x(\d+)\+\d+\+\d+/
+          raise Citrusbyte::Milton::MissingFileError.new("Could not identify #{path} as an image, does the file exist?") unless Milton.syscall('Thumbnail', "identify #{path}") =~ /.*? (\d+)x(\d+)\+\d+\+\d+/
           new($1, $2)
         end
 
