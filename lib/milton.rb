@@ -4,6 +4,7 @@ require 'milton/is_resizeable'
 require 'milton/is_uploadable'
 require 'milton/tempfile'
 require 'milton/file'
+require 'open3'
 
 module Citrusbyte
   module Milton
@@ -65,10 +66,12 @@ module Citrusbyte
       Rails.logger.info("[milton] #{invoker}: #{message}")
     end
     module_function :log
-    
+
     def syscall(command)
-      log("executing #{command}", Milton.called_by)
-      %x{#{command}}
+      log("executing #{command}", invoker = Milton.called_by)
+      returning %x{#{command} 2>>#{File.join(Rails.root, 'log', 'milton.stderr.log')}} do
+        log("failed to execute #{command}", invoker)
+      end
     end
     module_function :syscall
     
