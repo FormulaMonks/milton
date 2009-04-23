@@ -1,72 +1,7 @@
 require File.dirname(__FILE__) + '/../test_helper'
 
-class IsResizeableTest < ActiveSupport::TestCase
-  # milton.jpg is 320x300
-  context "resizing" do
-    setup do
-      @image = Image.create :file => upload('milton.jpg')
-    end
-    
-    should "create a resized copy of the image" do
-      assert File.exists?(@image.path(:size => '50x50'))
-    end
-
-    context "checking errors" do
-      should "raise a MissingFileError if source file does not exist" do
-        @image.send(:attached_file).destroy
-        assert_raise Citrusbyte::Milton::MissingFileError do
-          @image.path(:size => '50x50')
-        end
-      end
-    end
-
-    context "when cropped" do
-      setup do
-        @info = Citrusbyte::Milton::Image.from_path(@image.reload.path(:size => '50x50', :crop => true))
-      end
-      
-      should "have width of 50px" do
-        assert_equal 50, @info.width
-      end
-
-      should "have height of 50px" do
-        assert_equal 50, @info.height
-      end
-    end
-    
-    # 300/320   = 0.9375
-    # 50*0.9375 = 47
-    context "when not cropped" do
-      setup do
-        @info = Citrusbyte::Milton::Image.from_path(@image.reload.path(:size => '50x50'))
-      end
-
-      should "have width of 47px" do
-        assert_equal 47, @info.width
-      end
-
-      should "have height of 50px" do
-        assert_equal 50, @info.height
-      end
-    end    
-  end
-
-  context "smarter thumbnails" do
-    setup do
-      @image = Image.create :file => upload('big-milton.jpg')
-    end
-    
-    should "generate 640px wide version when image is wider than 640px wide and generating an image smaller than 640px wide" do
-      path = @image.path(:crop => true, :size => '40x40')
-      assert File.exists?(path.gsub(/\.crop=true_size=40x40/, '.size=640x'))
-    end
-    
-    should "generate images smaller than 640px wide from the existing 640px one" do
-      # TODO: how can i test this?
-      @image.path(:crop => true, :size => '40x40')
-    end
-  end
-  
+class IsResizeableTest < ActiveSupport::TestCase  
+  # TODO: move to derivative_test
   context "fetching thumbnails" do
     setup do
       @image = Image.create :file => upload('milton.jpg')
@@ -81,6 +16,7 @@ class IsResizeableTest < ActiveSupport::TestCase
     end
   end
   
+  # TODO: move to attachment_test
   context "getting mime-type" do
     setup do
       @image = Image.new :file => upload('milton.jpg')
@@ -103,4 +39,6 @@ class IsResizeableTest < ActiveSupport::TestCase
       end
     end
   end
+  
+  # TODO: write actual is_resizeable tests...
 end

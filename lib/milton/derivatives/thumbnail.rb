@@ -24,7 +24,7 @@ module Citrusbyte
             
       def resize
         raise "target size must be specified for resizing" unless options.has_key?(:size)
-        
+
         destination = Milton::Tempfile.path(@source.options[:tempfile_path], Milton::File.extension(@source.filename))
         
         # TODO: determine if this is neccessary or was just a problem w/ the

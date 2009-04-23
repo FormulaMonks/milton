@@ -88,7 +88,7 @@ module Citrusbyte
 
       def store(id)
         return true if stored?
-        Storage::StoredFile.adapter(options[:storage]).create(filename, temp_path, options.merge(:id => id))
+        Storage::StoredFile.adapter(options[:storage]).create(filename, id, temp_path, options)
         @stored = true
       end
 

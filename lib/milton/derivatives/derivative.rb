@@ -68,7 +68,7 @@ module Citrusbyte
       protected
       
       def file
-        @file ||= @source.class.new(filename, @source.options.merge(:id => @source.id))
+        @file ||= @source.copy(filename)
       end
     end
   end

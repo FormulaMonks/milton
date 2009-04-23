@@ -56,22 +56,30 @@ module Citrusbyte
     #     filename == basename + (extension ? '.' + extension : '')
     #
     
+    # Gives the filename and line number of the method which called the method
+    # that invoked #called_by.
     def called_by
       caller[1].gsub(/.*\/(.*):in (.*)/, "\\1:\\2")
     end
     module_function :called_by
     
+    # Writes the given message to the Rails log at the info level. If given an
+    # invoker (just a string) it prepends the message with that. If not given
+    # an invoker it outputs the filename and line number which called #log.
     def log(message, invoker=nil)
       invoker ||= Milton.called_by
       Rails.logger.info("[milton] #{invoker}: #{message}")
     end
     module_function :log
 
+    # Executes the given command, returning the commands output if successful
+    # or false if the command failed.
+    # Redirects stderr to log/milton.stderr.log in order to examine causes of
+    # failure.
     def syscall(command)
       log("executing #{command}", invoker = Milton.called_by)
-      returning %x{#{command} 2>>#{File.join(Rails.root, 'log', 'milton.stderr.log')}} do
-        log("failed to execute #{command}", invoker)
-      end
+      stdout = %x{#{command} 2>>#{File.join(Rails.root, 'log', 'milton.stderr.log')}}
+      $?.success? ? stdout : (log("failed to execute #{command}", invoker) and return false)
     end
     module_function :syscall
     

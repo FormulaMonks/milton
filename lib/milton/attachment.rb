@@ -102,7 +102,7 @@ module Citrusbyte
         # i.e. 
         #   have attached_file return a ResizeableFile, or a TranscodableFile
         def attached_file
-          @attached_file ||= Storage::StoredFile.adapter(self.class.milton_options[:storage]).new(filename, self.class.milton_options.merge(:id => id))
+          @attached_file ||= Storage::StoredFile.adapter(self.class.milton_options[:storage]).new(filename, id, self.class.milton_options)
         end
         
         # Clean the file from the filesystem
