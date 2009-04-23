@@ -40,5 +40,54 @@ class IsResizeableTest < ActiveSupport::TestCase
     end
   end
   
-  # TODO: write actual is_resizeable tests...
+  context "setting options" do
+    class ResizeableFoo < ActiveRecord::Base
+      is_resizeable :storage_options => { :root => '/foo' }, :resizeable => { :sizes => { :foo => { :size => '50x50', :crop => true } } }
+    end
+    
+    should "have storage root set" do
+      assert_equal '/foo', ResizeableFoo.milton_options[:storage_options][:root]
+    end
+    
+    should "have sizes set" do
+      assert_equal({ :foo => { :size => '50x50', :crop => true } }, ResizeableFoo.milton_options[:resizeable][:sizes])
+    end
+  end
+  
+  context "processing thumbnails" do    
+    context "with sizes" do
+      class ImageWithSizes < Image
+        is_image :storage_options => { :root => output_path }, :resizeable => { :sizes => {
+          :foo => { :size => '50x50', :crop => true },
+          :bar => { :size => '10x10' },
+        } }
+      end
+      
+      setup do
+        @image = ImageWithSizes.create! :file => upload('milton.jpg')
+      end
+      
+      should "create :foo thumbnail" do
+        assert File.exists?(@image.path(:name => :foo))
+      end
+      
+      should "create :bar thumbnail" do
+        assert File.exists?(@image.path(:name => :bar))
+      end
+    end
+    
+    context "without sizes" do
+      setup do
+        @image = Image.create! :file => upload('milton.jpg')
+      end
+            
+      should "not create :foo thumbnail" do
+        assert !File.exists?(@image.path(:name => :foo))
+      end
+      
+      should "happily return path to non-existant :foo thumbnail" do
+        assert_equal 'milton.foo.jpg', File.basename(@image.path(:name => :foo))
+      end
+    end
+  end
 end

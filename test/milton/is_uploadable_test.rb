@@ -34,14 +34,14 @@ class Citrusbyte::Milton::IsUploadableTest < ActiveSupport::TestCase
     
     context "defaults" do
       should "use :disk as default storage" do
-      assert_equal :disk, Attachment.milton_options[:storage]
+        assert_equal :disk, Attachment.milton_options[:storage]
       end
     end
     
     context "overwriting" do
       should "be able to overwrite options from is_uploadable call" do
         Attachment.class_eval("is_uploadable(:storage => :foo)")
-      assert_equal :foo, Attachment.milton_options[:storage]
+        assert_equal :foo, Attachment.milton_options[:storage]
       end
       
       teardown do

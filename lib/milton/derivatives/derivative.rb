@@ -67,10 +67,13 @@ module Citrusbyte
       
       protected
       
-      def postprocessing?
-        @source.options[:postprocessing]
+      # Returns true if the Derivative should be processed.
+      def process?
+        @source.options[:process] && !exists?
       end
       
+      # Returns the StoredFile which represents the Derivative (which is a copy
+      # of the source w/ a different filename).
       def file
         @file ||= @source.copy(filename)
       end

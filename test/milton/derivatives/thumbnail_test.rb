@@ -6,7 +6,7 @@ module Citrusbyte::Milton
       :storage_options => { :root => output_path, :chmod => 0755 }, 
       :separator       => '.', 
       :tempfile_path   => File.join(Rails.root, 'tmp', 'milton'),
-      :postprocessing  => true
+      :process         => true
     }
     
     context "building the filename from options" do
@@ -100,7 +100,7 @@ module Citrusbyte::Milton
       
       context "when postprocessing is off" do
         setup do
-          @source = Storage::DiskFile.create('milton.jpg', 2, File.join(fixture_path, 'milton.jpg'), @@options.merge(:postprocessing => false))
+          @source = Storage::DiskFile.create('milton.jpg', 2, File.join(fixture_path, 'milton.jpg'), @@options.merge(:process => false))
           @thumbnail = Thumbnail.new(@source, :size => '50x50')
         end
 
