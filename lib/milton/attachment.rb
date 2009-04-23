@@ -25,11 +25,16 @@ module Citrusbyte
         def has_attachment_methods(options={})
           require_column 'filename', "Milton requires a filename column on #{class_name} table"
 
-          # character used to seperate a filename from its derivative options, this
+          # Character used to seperate a filename from its derivative options, this
           # character will be stripped from all incoming filenames and replaced by
           # replacement
           options[:separator]        ||= '.'
           options[:replacement]      ||= '-'
+          # Set to true to allow on-demand processing of derivatives. This can
+          # be rediculously slow because it requires that the existance of the
+          # derivative is checked each time it's requested -- throw in S3 and
+          # that becomes a huge lag. Reccommended only for prototyping.
+          options[:postproccess]     ||= false
           options[:tempfile_path]    ||= File.join(Rails.root, "tmp", "milton")
           options[:storage]          ||= :disk
           options[:storage_options]  ||= {}

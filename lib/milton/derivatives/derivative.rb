@@ -49,7 +49,7 @@ module Citrusbyte
       # The resulting filename of this Derivative with embedded options.
       def filename
         filename  = @source.path
-        append    = options.collect{ |k, v| "#{k}=#{v}" }.sort.join('_')
+        append    = options[:name] ? options[:name] : options.collect{ |k, v| "#{k}=#{v}" }.sort.join('_')
         extension = File.extname(filename)
     
         File.basename(filename, extension) + (append.blank? ? '' : "#{@source.options[:separator]}#{append}") + extension
@@ -66,6 +66,10 @@ module Citrusbyte
       end
       
       protected
+      
+      def postprocessing?
+        @source.options[:postprocessing]
+      end
       
       def file
         @file ||= @source.copy(filename)

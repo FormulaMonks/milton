@@ -3,7 +3,7 @@ module Citrusbyte
     class Thumbnail < Derivative
       def path
         returning super do
-          resize unless exists?
+          resize unless !postprocessing? || exists?
         end
       end
     
