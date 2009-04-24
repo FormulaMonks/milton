@@ -96,10 +96,8 @@ module Citrusbyte
       # various extensions can use this when they're included to make sure
       # that the core attachment methods are available
       def ensure_attachment_methods(options={})
-        unless included_modules.include?(Citrusbyte::Milton::Attachment)
-          include Citrusbyte::Milton::Attachment
-          has_attachment_methods(options)
-        end
+        include Citrusbyte::Milton::Attachment unless included_modules.include?(Citrusbyte::Milton::Attachment)
+        has_attachment_methods(options)
       end
     end
   end

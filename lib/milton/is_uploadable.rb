@@ -14,7 +14,7 @@ module Citrusbyte
           
           ensure_attachment_methods options
           
-          self.milton_options.deep_merge!(options)
+          self.milton_options.merge!(options)
 
           after_create :save_uploaded_file
 
@@ -23,8 +23,7 @@ module Citrusbyte
           
           # when is_uploadable is included we need to make sure that we don't
           # run any processing until the upload has been saved
-          @after_create_callbacks.delete(:create_derivatives)
-          after_file_saved :create_derivatives
+          after_file_saved :create_derivatives if @after_create_callbacks.delete(:create_derivatives)
         end
       end
 

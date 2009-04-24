@@ -34,6 +34,12 @@ module Citrusbyte
         def from_filename(filename)
           Derivative.new(filename, options_from(extract_options_from(filename)))
         end
+        
+        def process(source, options={}, settings={})
+          returning(derivative = new(source, options, settings)) do
+            derivative.process unless derivative.exists?
+          end
+        end
       end
 
       attr_reader :options, :settings
@@ -50,11 +56,14 @@ module Citrusbyte
   
       # The resulting filename of this Derivative with embedded options.
       def filename
-        filename  = @source.path
-        append    = options[:name] ? options[:name] : options.collect{ |k, v| "#{k}=#{v}" }.sort.join('_')
-        extension = File.extname(filename)
-    
-        File.basename(filename, extension) + (append.blank? ? '' : "#{settings[:separator]}#{append}") + extension
+        extension = File.extname(@source.path)
+        
+        if options[:name]
+          "#{options[:name]}#{extension}"
+        else
+          append = options.collect{ |k, v| "#{k}=#{v}" }.sort.join('_')
+          File.basename(@source.path, extension) + (append.blank? ? '' : "#{settings[:separator]}#{append}") + extension
+        end
       end
   
       # The full path and filename to this Derivative.
@@ -67,11 +76,14 @@ module Citrusbyte
         file.exists?
       end
       
-      protected
+      # Overwrite this to provide your derivatives processing.
+      def process;end;
       
-      # Returns true if the Derivative should be processed.
-      def process?
-        settings[:process] && !exists?
+      # Convenience method, only runs process if the given condition is true.
+      # Returns the derivative so it's chainable.
+      def process_if(condition)
+        process if condition && !exists?
+        return self
       end
       
       # Returns the StoredFile which represents the Derivative (which is a copy

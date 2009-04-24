@@ -5,7 +5,7 @@ module Citrusbyte::Milton
   class DerivativeTest < ActiveSupport::TestCase
     @@options ||= { :storage_options => { :root => output_path }, :separator => '.' }
     @@file ||= Citrusbyte::Milton::Storage::DiskFile.new('milton.jpg', 1, @@options)
-        
+    
     context "building the filename from options" do
       context "options as hash" do
         should "coalesce size into filename" do

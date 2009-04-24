@@ -1,28 +1,7 @@
 module Citrusbyte
   module Milton
-    class Thumbnail < Derivative
-      def path
-        returning super do
-          resize if process?
-        end
-      end
-    
-      protected
-      
-      # For speed, any derivatives less than 640-wide are made from a 
-      # 640-wide version of the image (so you're not generating tiny
-      # thumbnails from an 8-megapixel upload)
-      def source
-        image.width > 640 && Image.from_geometry(options[:size]).width < 640 ? Thumbnail.new(@source, { :size => '640x' }, settings).path : @source.path
-      end
-      
-      # Returns and memoizes an Image initialized from the file we're making a
-      # thumbnail of
-      def image
-        @image ||= Image.from_path(@source.path)
-      end
-            
-      def resize
+    class Thumbnail < Derivative      
+      def process
         raise "target size must be specified for resizing" unless options.has_key?(:size)
 
         destination = Milton::Tempfile.path(settings[:tempfile_path], Milton::File.extension(@source.filename))
@@ -39,9 +18,27 @@ module Citrusbyte
           conversion_options = %Q(-gravity #{crop.gravity} -crop #{crop.cropping_geometry})
         end
         
-        Milton.syscall(%Q{convert #{source} -geometry #{size || options[:size]} #{conversion_options || ''} +repage "#{destination}"})
+        # TODO: raise if the syscall fails
+        Milton.syscall(%Q{convert #{source} -geometry #{size || options[:size]} #{conversion_options || ''} +repage "#{destination}"}) 
         
+        # TODO: raise if the store fails
         file.store(destination)
+      end
+
+      protected
+      
+      # For speed, any derivatives less than 640-wide are made from a 
+      # 640-wide version of the image (so you're not generating tiny
+      # thumbnails from an 8-megapixel upload)
+      def source
+        image.width > 640 && Image.from_geometry(options[:size]).width < 640 ? 
+          Thumbnail.process(@source, { :size => '640x' }, settings).path : @source.path
+      end
+      
+      # Returns and memoizes an Image initialized from the file we're making a
+      # thumbnail of
+      def image
+        @image ||= Image.from_path(@source.path)
       end
     end
     

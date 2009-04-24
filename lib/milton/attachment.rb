@@ -24,35 +24,36 @@ module Citrusbyte
         
         def has_attachment_methods(options={})
           require_column 'filename', "Milton requires a filename column on #{class_name} table"
-
+                    
+          milton_options.merge!(options)
+          
           # Character used to seperate a filename from its derivative options, this
           # character will be stripped from all incoming filenames and replaced by
           # replacement
-          options[:separator]        ||= '.'
-          options[:replacement]      ||= '-'
+          milton_options[:separator]        ||= '.'
+          milton_options[:replacement]      ||= '-'
           # Set to true to allow on-demand processing of derivatives. This can
           # be rediculously slow because it requires that the existance of the
           # derivative is checked each time it's requested -- throw in S3 and
           # that becomes a huge lag. Reccommended only for prototyping.
-          options[:postproccess]     ||= false
-          options[:tempfile_path]    ||= File.join(Rails.root, "tmp", "milton")
-          options[:storage]          ||= :disk
-          options[:storage_options]  ||= {}
+          milton_options[:postproccess]     ||= false
+          milton_options[:tempfile_path]    ||= File.join(Rails.root, "tmp", "milton")
+          milton_options[:storage]          ||= :disk
+          milton_options[:storage_options]  ||= {}
 
-          if options[:storage] == :disk
+          if milton_options[:storage] == :disk
             # root of where the underlying files are stored (or will be stored)
             # on the file system
-            options[:storage_options][:root]  ||= File.join(Rails.root, "public", table_name)
+            milton_options[:storage_options][:root]  ||= File.join(Rails.root, "public", table_name)
+            milton_options[:storage_options][:root]    = File.expand_path(milton_options[:storage_options][:root])
             # mode to set on stored files and created directories
-            options[:storage_options][:chmod] ||= 0755
+            milton_options[:storage_options][:chmod] ||= 0755
           end
-                              
-          self.milton_options.merge!(options)
           
           validates_presence_of :filename
           
           before_destroy :destroy_attached_file
-          
+                    
           include Citrusbyte::Milton::Attachment::InstanceMethods
         end
       end
@@ -65,7 +66,7 @@ module Citrusbyte
         # TODO: change the filename on the underlying file system on save so as
         # not to orphan the file
         def filename=(name)
-          write_attribute :filename, Storage::StoredFile.sanitize_filename(name, self.milton_options)
+          write_attribute :filename, Storage::StoredFile.sanitize_filename(name, self.class.milton_options)
         end
 
         # Returns the content_type of this attachment, tries to determine it if
@@ -93,10 +94,9 @@ module Citrusbyte
           path(options).gsub(/.*?\/#{base}/, '')
         end
         
-        # The path to the file, takes an optional hash of options which can be
-        # used to determine a particular derivative of the file desired
-        def path(options={})
-          options.empty? ? attached_file.path : Derivative.new(attached_file, options).path
+        # The path to the file.
+        def path
+          attached_file.path
         end
         
         protected
@@ -107,10 +107,6 @@ module Citrusbyte
         def process?
           self.class.milton_options[:postprocessing]
         end
-        
-        # Anything that needs to create derivatives on creation should override
-        # this
-        def create_derivatives;end;
         
         # A reference to the attached file, this is probably what you want to
         # overwrite to introduce a new behavior

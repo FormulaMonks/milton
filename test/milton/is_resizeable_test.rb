@@ -42,7 +42,9 @@ class IsResizeableTest < ActiveSupport::TestCase
   
   context "setting options" do
     class ResizeableFoo < ActiveRecord::Base
-      is_resizeable :storage_options => { :root => '/foo' }, :resizeable => { :sizes => { :foo => { :size => '50x50', :crop => true } } }
+      is_resizeable :storage_options => { :root => '/foo' }, :resizeable => { :sizes => { 
+        :foo => { :size => '50x50', :crop => true } 
+      } }
     end
     
     should "have storage root set" do
@@ -75,7 +77,7 @@ class IsResizeableTest < ActiveSupport::TestCase
         assert File.exists?(@image.path(:name => :bar))
       end
     end
-    
+        
     context "without sizes" do      
       setup do
         @image = Image.create! :file => upload('milton.jpg')
@@ -86,7 +88,21 @@ class IsResizeableTest < ActiveSupport::TestCase
       end
       
       should "happily return path to non-existant :foo thumbnail" do
-        assert_equal 'milton.foo.jpg', File.basename(@image.path(:name => :foo))
+        assert_equal 'foo.jpg', File.basename(@image.path(:name => :foo))
+      end
+    end
+    
+    context "with postprocessing" do
+      class ImageWithPostprocessing < Image
+        is_image :storage_options => { :root => output_path }, :postprocessing => true
+      end
+      
+      setup do
+        @image = ImageWithPostprocessing.create! :file => upload('milton.jpg')
+      end
+      
+      should "create a :foo thumbnail" do
+        assert File.exists?(@image.path(:name => :foo, :size => '50x50'))
       end
     end
   end

@@ -2,22 +2,42 @@ require File.dirname(__FILE__) + '/../test_helper'
 
 class AttachmentTest < ActiveSupport::TestCase
   context "setting options" do
-    setup do
-      Attachment.class_eval("is_uploadable :storage_options => { :root => 'foo' }")
-      Image.class_eval("is_uploadable :storage_options => { :root => 'bar' }")
+    class FooRootImage < Image
+      is_image :storage_options => { :root => '/foo' }
     end
     
-    should "not overwrite Attachment's root setting with Image's" do
-      assert_equal 'foo', Attachment.milton_options[:storage_options][:root]
+    class BarRootImage < Image
+      is_image :storage_options => { :root => '/bar' }
+    end
+    
+    should "not overwrite FooRootImage's root setting with BarRootImage's" do
+      assert_equal '/foo', FooRootImage.milton_options[:storage_options][:root]
     end
 
-    should "not overwrite Image's root setting with Attachment's" do
-      assert_equal 'bar', Image.milton_options[:storage_options][:root]
+    should "not overwrite BarRootImage's root setting with FooRootImage's" do
+      assert_equal '/bar', BarRootImage.milton_options[:storage_options][:root]
+    end
+  end
+  
+  context "inheriting options" do
+    class FooImage < Image
+      is_image :resizeable => { :sizes => { :foo => { :size => '10x10' } } }
     end
     
-    teardown do
-      Attachment.class_eval("is_uploadable :storage_options => { :root => '#{output_path}' }")
-      Image.class_eval("is_uploadable :storage_options => { :root => '#{output_path}' }")
+    class BarImage < FooImage
+      is_image :resizeable => { :sizes => { } }
+    end
+    
+    should "inherit settings from Image" do
+      assert_equal Image.milton_options[:storage_options][:root], FooImage.milton_options[:storage_options][:root]
+    end
+    
+    should "overwrite settings from Image when redefined in FooImage" do
+      assert_equal({ :foo => { :size => '10x10' } }, FooImage.milton_options[:resizeable][:sizes])
+    end
+    
+    should "overwrite settings from FooImage when redefined in BarImage" do
+      assert_equal({}, BarImage.milton_options[:resizeable][:sizes])
     end
   end
   

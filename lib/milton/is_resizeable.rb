@@ -11,9 +11,9 @@ module Citrusbyte
         def is_resizeable(options={})
           ensure_attachment_methods options
 
-          options[:resizeable] ||= {}
-          options[:resizeable][:sizes] ||= {}
-          self.milton_options.deep_merge!(options)
+          self.milton_options.merge!(options)
+          self.milton_options[:resizeable]         ||= {}
+          self.milton_options[:resizeable][:sizes] ||= {}
 
           after_create :create_derivatives
 
@@ -23,14 +23,15 @@ module Citrusbyte
 
       module InstanceMethods
         def path(options={})
-          options.empty? ? attached_file.path : Thumbnail.new(attached_file, options, self.class.milton_options.merge(:process => process?)).path
+          return super() if options.empty?
+          Thumbnail.new(attached_file, options, self.class.milton_options).process_if(process?).path
         end
         
         protected
         
         def create_derivatives
-          thumbnails = self.class.milton_options[:resizeable][:sizes].each do |name, options|
-            Thumbnail.new(attached_file, options.merge(:name => name), self.class.milton_options.merge(:process => true)).path
+          self.class.milton_options[:resizeable][:sizes].each do |name, options|
+            Thumbnail.process(attached_file, options.merge(:name => name), self.class.milton_options)
           end
         end
       end        
