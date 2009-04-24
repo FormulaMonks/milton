@@ -1,4 +1,5 @@
 require File.join(File.dirname(__FILE__), 'stored_file')
+# FIXME: don't require right_aws until the user actually tries to use S3
 require 'right_aws'
 
 module Citrusbyte

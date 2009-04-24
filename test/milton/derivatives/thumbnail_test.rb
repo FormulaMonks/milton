@@ -2,7 +2,7 @@ require File.dirname(__FILE__) + '/../../test_helper'
 
 module Citrusbyte::Milton
   class ThumbnailTest < ActiveSupport::TestCase
-    @@options = { 
+    @@options ||= { 
       :storage_options => { :root => output_path, :chmod => 0755 }, 
       :separator       => '.', 
       :tempfile_path   => File.join(Rails.root, 'tmp', 'milton'),
@@ -16,7 +16,7 @@ module Citrusbyte::Milton
       
       should "raise unless a size is given" do
         assert_raise RuntimeError do
-          Thumbnail.new(@file, :crop => true).path
+          Thumbnail.new(@file, { :crop => true }, @@options).path
         end
       end
     end
@@ -32,13 +32,13 @@ module Citrusbyte::Milton
           should "raise a MissingFileError if source file does not exist" do
             @source.destroy
             assert_raise Citrusbyte::Milton::MissingFileError do
-              Thumbnail.new(@source, :size => '50x50').path
+              Thumbnail.new(@source, { :size => '50x50' }, @@options).path
             end
           end
         
           should "raise if no size is specified" do
             assert_raise RuntimeError do
-              Thumbnail.new(@source, :crop => true).path
+              Thumbnail.new(@source, { :crop => true }, @@options).path
             end
           end
         end
@@ -47,7 +47,7 @@ module Citrusbyte::Milton
         # 50*0.9375 = 47
         context "without cropping" do
           setup do
-            @thumbnail = Thumbnail.new(@source, :size => '50x50')
+            @thumbnail = Thumbnail.new(@source, { :size => '50x50' }, @@options)
             @info = Image.from_path(@thumbnail.path)
           end
 
@@ -66,7 +66,7 @@ module Citrusbyte::Milton
 
         context "with cropping" do
           setup do
-            @thumbnail = Thumbnail.new(@source, :size => '50x50', :crop => true)
+            @thumbnail = Thumbnail.new(@source, { :size => '50x50', :crop => true }, @@options)
             @info = Image.from_path(@thumbnail.path)
           end
 
@@ -85,7 +85,7 @@ module Citrusbyte::Milton
             
         context "with named sizes" do
           setup do
-            @thumbnail = Thumbnail.new(@source, :name => :small, :size => '50x50')
+            @thumbnail = Thumbnail.new(@source, { :name => :small, :size => '50x50' }, @@options)
           end
         
           should "create a resized copy of the image" do
@@ -100,8 +100,8 @@ module Citrusbyte::Milton
       
       context "when postprocessing is off" do
         setup do
-          @source = Storage::DiskFile.create('milton.jpg', 2, File.join(fixture_path, 'milton.jpg'), @@options.merge(:process => false))
-          @thumbnail = Thumbnail.new(@source, :size => '50x50')
+          @source = Storage::DiskFile.create('milton.jpg', 2, File.join(fixture_path, 'milton.jpg'), @@options)
+          @thumbnail = Thumbnail.new(@source, { :size => '50x50' }, @@options.merge(:process => false))
         end
 
         should "not create a resized copy of the image" do
@@ -113,7 +113,7 @@ module Citrusbyte::Milton
     context "resizing large images" do
       setup do
         @source = Storage::DiskFile.create('big-milton.jpg', 1, File.join(fixture_path, 'big-milton.jpg'), @@options)
-        @thumbnail = Thumbnail.new(@source, :crop => true, :size => '40x40')
+        @thumbnail = Thumbnail.new(@source, { :crop => true, :size => '40x40' }, @@options)
       end
 
       should "generate a 640px wide version when image is wider than 640px wide and generating an image smaller than 640px wide" do

@@ -36,14 +36,16 @@ module Citrusbyte
         end
       end
 
-      attr_reader :options
+      attr_reader :options, :settings
   
       # Instantiate a new Derivative:
       # * +source+: a reference to the Storage::StoredFile this will be a Derivative of
       # * +options+: options to generate the Derivative using
-      def initialize(source, options={})
-        @source  = source
-        @options = options.is_a?(String) ? self.class.options_from(options) : options
+      # * +settings+: settings about how to create Derivatives
+      def initialize(source, options={}, settings={})
+        @source   = source
+        @options  = options.is_a?(String) ? self.class.options_from(options) : options
+        @settings = settings
       end
   
       # The resulting filename of this Derivative with embedded options.
@@ -52,7 +54,7 @@ module Citrusbyte
         append    = options[:name] ? options[:name] : options.collect{ |k, v| "#{k}=#{v}" }.sort.join('_')
         extension = File.extname(filename)
     
-        File.basename(filename, extension) + (append.blank? ? '' : "#{@source.options[:separator]}#{append}") + extension
+        File.basename(filename, extension) + (append.blank? ? '' : "#{settings[:separator]}#{append}") + extension
       end
   
       # The full path and filename to this Derivative.
@@ -69,7 +71,7 @@ module Citrusbyte
       
       # Returns true if the Derivative should be processed.
       def process?
-        @source.options[:process] && !exists?
+        settings[:process] && !exists?
       end
       
       # Returns the StoredFile which represents the Derivative (which is a copy

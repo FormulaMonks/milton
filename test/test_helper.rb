@@ -1,6 +1,9 @@
 require File.dirname(__FILE__) + '/../../../../test/test_helper'
-raise "The tests require a Rails environment, try running them from within a Rails application." unless defined?(Rails)
-raise "The tests require Contest or Shoulda gem loaded in your Rails environment" unless ActiveSupport::TestCase.respond_to?(:context)
+puts "\nWARNING: The tests require a Rails environment, try running them from within a Rails application.\n\n" unless defined?(Rails)
+puts "\nWARNING: The tests require Contest or Shoulda gem loaded in your Rails environment\n\n" unless ActiveSupport::TestCase.respond_to?(:context)
+unless %w( ActiveRecord::ConnectionAdapters::PostgreSQLAdapter ActiveRecord::ConnectionAdapters::MysqlAdapter ).include?(ActiveRecord::Base.connection.class.to_s)
+  puts "\nWARNING: The tests will fail using any adapter other than PostgreSQL or MySQL because they depend on a proper transaction rollback that retains the current sequence, Milton itself will still work however.\n\n"
+end
 
 require 'flexmock/test_unit'
 require 'redgreen' rescue LoadError

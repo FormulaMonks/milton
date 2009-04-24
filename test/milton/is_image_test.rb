@@ -1,4 +1,6 @@
 require File.dirname(__FILE__) + '/../test_helper'
 
-class Citrusbyte::Milton::IsImageTest < ActiveSupport::TestCase
+module Citrusbyte::Milton
+  class IsImageTest < ActiveSupport::TestCase
+  end
 end

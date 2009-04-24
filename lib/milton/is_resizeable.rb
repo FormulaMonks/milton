@@ -15,21 +15,22 @@ module Citrusbyte
           options[:resizeable][:sizes] ||= {}
           self.milton_options.deep_merge!(options)
 
+          after_create :create_derivatives
+
           include Citrusbyte::Milton::IsResizeable::InstanceMethods
         end
       end
 
       module InstanceMethods
         def path(options={})
-          options.empty? ? attached_file.path : Thumbnail.new(attached_file, options).path
+          options.empty? ? attached_file.path : Thumbnail.new(attached_file, options, self.class.milton_options.merge(:process => process?)).path
         end
         
         protected
         
-        def preprocess
-          super
+        def create_derivatives
           thumbnails = self.class.milton_options[:resizeable][:sizes].each do |name, options|
-            Thumbnail.new(attached_file, options.merge(:name => name)).path
+            Thumbnail.new(attached_file, options.merge(:name => name), self.class.milton_options.merge(:process => true)).path
           end
         end
       end        

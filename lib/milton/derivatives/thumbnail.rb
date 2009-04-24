@@ -13,7 +13,7 @@ module Citrusbyte
       # 640-wide version of the image (so you're not generating tiny
       # thumbnails from an 8-megapixel upload)
       def source
-        image.width > 640 && Image.from_geometry(options[:size]).width < 640 ? Thumbnail.new(@source, { :size => '640x' }).path : @source.path
+        image.width > 640 && Image.from_geometry(options[:size]).width < 640 ? Thumbnail.new(@source, { :size => '640x' }, settings).path : @source.path
       end
       
       # Returns and memoizes an Image initialized from the file we're making a
@@ -25,7 +25,7 @@ module Citrusbyte
       def resize
         raise "target size must be specified for resizing" unless options.has_key?(:size)
 
-        destination = Milton::Tempfile.path(@source.options[:tempfile_path], Milton::File.extension(@source.filename))
+        destination = Milton::Tempfile.path(settings[:tempfile_path], Milton::File.extension(@source.filename))
         
         # TODO: determine if this is neccessary or was just a problem w/ the
         # way we were calling convert

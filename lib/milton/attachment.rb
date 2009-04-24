@@ -51,7 +51,6 @@ module Citrusbyte
           
           validates_presence_of :filename
           
-          after_create :preprocess
           before_destroy :destroy_attached_file
           
           include Citrusbyte::Milton::Attachment::InstanceMethods
@@ -106,18 +105,12 @@ module Citrusbyte
         # returns false if no processing should be done when a derivative is
         # requested.
         def process?
-          @preprocess || self.class.milton_options[:postprocessing]
+          self.class.milton_options[:postprocessing]
         end
         
-        # Collects and processes all the derivatives expected of this 
-        # Attachment, extend this to add more derivative expecations. Note that
-        # this runs on an after_create hook so we already know it's only gonna
-        # happen for newly created records.
-        # 
-        # When extending remember to call +super+ or set +@preprocess = true+.
-        def preprocess
-          @preprocess = true
-        end
+        # Anything that needs to create derivatives on creation should override
+        # this
+        def create_derivatives;end;
         
         # A reference to the attached file, this is probably what you want to
         # overwrite to introduce a new behavior
@@ -125,7 +118,7 @@ module Citrusbyte
         # i.e. 
         #   have attached_file return a ResizeableFile, or a TranscodableFile
         def attached_file
-          @attached_file ||= Storage::StoredFile.adapter(self.class.milton_options[:storage]).new(filename, id, self.class.milton_options.merge(:process => process?))
+          @attached_file ||= Storage::StoredFile.adapter(self.class.milton_options[:storage]).new(filename, id, self.class.milton_options)
         end
         
         # Clean the file from the filesystem

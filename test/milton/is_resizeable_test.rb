@@ -76,11 +76,11 @@ class IsResizeableTest < ActiveSupport::TestCase
       end
     end
     
-    context "without sizes" do
+    context "without sizes" do      
       setup do
         @image = Image.create! :file => upload('milton.jpg')
       end
-            
+      
       should "not create :foo thumbnail" do
         assert !File.exists?(@image.path(:name => :foo))
       end

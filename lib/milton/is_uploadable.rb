@@ -23,8 +23,8 @@ module Citrusbyte
           
           # when is_uploadable is included we need to make sure that we don't
           # run any processing until the upload has been saved
-          @after_create_callbacks.delete(:preprocess)
-          after_file_saved :preprocess
+          @after_create_callbacks.delete(:create_derivatives)
+          after_file_saved :create_derivatives
         end
       end
 
