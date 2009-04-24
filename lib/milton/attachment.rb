@@ -1,19 +1,26 @@
 require 'ftools'
 require 'fileutils'
-require File.join(File.dirname(__FILE__), 'derivatives', 'derivative')
-require File.join(File.dirname(__FILE__), 'storage', 'disk_file')
-require File.join(File.dirname(__FILE__), 'storage', 's3_file')
+require 'milton/derivatives/derivative'
 
 module Citrusbyte
   module Milton
-    module Attachment      
-      def self.included(base)
-        base.class_inheritable_accessor :milton_options
-        base.milton_options = {}
-        base.extend Citrusbyte::Milton::Attachment::AttachmentMethods
+    module Attachment
+      # Call is_attachment with your options in order to add attachment
+      # functionality to your ActiveRecord model.
+      # 
+      # TODO: list options
+      def is_attachment(options={})
+        # Check to see that it hasn't already been extended so that subclasses
+        # can redefine is_attachment from their superclasses and overwrite 
+        # options w/o losing the superclass options.
+        unless respond_to?(:has_attachment_methods)
+          extend Citrusbyte::Milton::Attachment::AttachmentMethods
+          class_inheritable_accessor :milton_options
+        end
+        has_attachment_methods(options)
       end
       
-      module AttachmentMethods
+      module AttachmentMethods        
         def require_column(column, message)
           begin
             raise message unless column_names.include?(column)
@@ -24,7 +31,11 @@ module Citrusbyte
         
         def has_attachment_methods(options={})
           require_column 'filename', "Milton requires a filename column on #{class_name} table"
-                    
+          
+          # It's possible that this is being included from a class and a sub
+          # class of that class, in which case we need to merge the existing
+          # options up.
+          self.milton_options ||= {}
           milton_options.merge!(options)
           
           # Character used to seperate a filename from its derivative options, this
@@ -40,22 +51,43 @@ module Citrusbyte
           milton_options[:tempfile_path]    ||= File.join(Rails.root, "tmp", "milton")
           milton_options[:storage]          ||= :disk
           milton_options[:storage_options]  ||= {}
+          milton_options[:processors]       ||= {}
+          milton_options[:uploading]        ||= true
+          milton_options[:recipes]          ||= {}
 
           if milton_options[:storage] == :disk
+            require 'milton/storage/disk_file'
             # root of where the underlying files are stored (or will be stored)
             # on the file system
             milton_options[:storage_options][:root]  ||= File.join(Rails.root, "public", table_name)
             milton_options[:storage_options][:root]    = File.expand_path(milton_options[:storage_options][:root])
             # mode to set on stored files and created directories
             milton_options[:storage_options][:chmod] ||= 0755
+          else
+            require 'milton/storage/s3_file'
+          end
+          
+          milton_options[:processors].each do |processor, options|
+            begin
+              require "milton/derivatives/#{processor}"                 
+            rescue LoadError => e
+              raise LoadError.new("No '#{processor}' processor found for Milton")
+            end
           end
           
           validates_presence_of :filename
           
           before_destroy :destroy_attached_file
-                    
+          after_create :create_derivatives
+
           include Citrusbyte::Milton::Attachment::InstanceMethods
-        end
+          
+          if milton_options[:uploading]
+            require 'milton/uploading'
+            extend  Citrusbyte::Milton::Uploading::ClassMethods
+            include Citrusbyte::Milton::Uploading::InstanceMethods
+          end
+        end        
       end
       
       # These get mixed in to your model when you use Milton
@@ -95,12 +127,28 @@ module Citrusbyte
         end
         
         # The path to the file.
-        def path
-          attached_file.path
+        def path(options=nil)
+          return attached_file.path if options.nil?
+          process(options).path
         end
         
         protected
         
+        def create_derivatives
+          milton_options[:recipes].each{ |name, recipe| process(name, true) } if milton_options[:recipes].any?
+        end
+        
+        def process(options, force=false)
+          options = milton_options[:recipes][options] unless options.is_a?(Hash)
+
+          source = attached_file
+          options.each do |processor, opts|
+            raise "Don't know how to #{processor}, did you initialize it in #{self.class} is_attachment :processors?" unless self.class.milton_options[:processors].include?(processor)
+            source = Derivative.factory(processor, source, opts, self.class.milton_options).process_if(process? || force).file
+          end
+          source
+        end
+                
         # Returns true if derivaties of the attachment should be processed,
         # returns false if no processing should be done when a derivative is
         # requested.

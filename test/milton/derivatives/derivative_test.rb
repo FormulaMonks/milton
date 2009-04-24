@@ -6,6 +6,21 @@ module Citrusbyte::Milton
     @@options ||= { :storage_options => { :root => output_path }, :separator => '.' }
     @@file ||= Citrusbyte::Milton::Storage::DiskFile.new('milton.jpg', 1, @@options)
     
+    # TODO: move to disk_file_test
+    context "path partitioning" do
+      should "use the partitioned path when grabbing the original file" do
+        assert_equal "#{output_path}/000/000/000/001/milton.jpg", @@file.path
+      end
+
+      should "use the partitioned path when grabbing a thubmnail" do
+        assert_equal "#{output_path}/000/000/000/001/milton.foo=bar.jpg", Derivative.new(@@file, { :foo => 'bar' }, @@options).path
+      end
+      
+      should "partition path based on id" do
+        assert_equal "#{output_path}/000/123/456/789/milton.jpg", Citrusbyte::Milton::Storage::DiskFile.new('milton.jpg', 123456789, @@options).path
+      end
+    end
+        
     context "building the filename from options" do
       context "options as hash" do
         should "coalesce size into filename" do

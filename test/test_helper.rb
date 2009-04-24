@@ -36,9 +36,9 @@ def upload(file, type='image/jpg')
 end
 
 class Attachment < ActiveRecord::Base
-  is_uploadable :storage_options => { :root => output_path }
+  is_attachment :storage_options => { :root => output_path }
 end
 
 class Image < ActiveRecord::Base
-  is_image :storage_options => { :root => output_path }
+  is_attachment :storage_options => { :root => output_path }, :processors => { :thumbnail => { :postprocessing => true } }
 end

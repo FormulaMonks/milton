@@ -79,21 +79,7 @@ module Citrusbyte::Milton
         should "have height of 50px" do
           assert_equal 50, @info.height
         end
-      end
-          
-      context "with named sizes" do
-        setup do
-          @thumbnail = Thumbnail.process(@source, { :name => :small, :size => '50x50' }, @@options)
-        end
-      
-        should "create a resized copy of the image" do
-          assert File.exists?(@thumbnail.path)
-        end
-      
-        should "use name as filename of image" do
-          assert_equal 'small.jpg', @thumbnail.filename
-        end
-      end
+      end          
     end
     
     context "resizing large images" do

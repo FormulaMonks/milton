@@ -1,10 +1,6 @@
 require 'milton/attachment'
-require 'milton/is_image'
-require 'milton/is_resizeable'
-require 'milton/is_uploadable'
-require 'milton/tempfile'
-require 'milton/file'
-require 'open3'
+require 'milton/core/tempfile'
+require 'milton/core/file'
 
 module Citrusbyte
   module Milton
@@ -82,25 +78,7 @@ module Citrusbyte
       $?.success? ? stdout : (log("failed to execute #{command}", invoker) and return false)
     end
     module_function :syscall
-    
-    def self.included(base)
-      base.extend Citrusbyte::Milton::BaseMethods
-      base.extend Citrusbyte::Milton::IsUploadable::IsMethods
-      base.extend Citrusbyte::Milton::IsResizeable::IsMethods
-      base.extend Citrusbyte::Milton::IsImage::IsMethods
-    end
-        
-    module BaseMethods
-      protected
-      # The attachment methods give the core of Milton's file-handling, so
-      # various extensions can use this when they're included to make sure
-      # that the core attachment methods are available
-      def ensure_attachment_methods(options={})
-        include Citrusbyte::Milton::Attachment unless included_modules.include?(Citrusbyte::Milton::Attachment)
-        has_attachment_methods(options)
-      end
-    end
   end
 end
 
-ActiveRecord::Base.send(:include, Citrusbyte::Milton)
+ActiveRecord::Base.extend Citrusbyte::Milton::Attachment

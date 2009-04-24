@@ -40,6 +40,10 @@ module Citrusbyte
             derivative.process unless derivative.exists?
           end
         end
+        
+        def factory(type, source, options={}, settings={})
+          "Citrusbyte::Milton::#{type.to_s.classify}".constantize.new(source, options, settings)
+        end
       end
 
       attr_reader :options, :settings
@@ -56,14 +60,9 @@ module Citrusbyte
   
       # The resulting filename of this Derivative with embedded options.
       def filename
-        extension = File.extname(@source.path)
-        
-        if options[:name]
-          "#{options[:name]}#{extension}"
-        else
-          append = options.collect{ |k, v| "#{k}=#{v}" }.sort.join('_')
-          File.basename(@source.path, extension) + (append.blank? ? '' : "#{settings[:separator]}#{append}") + extension
-        end
+        extension = File.extname(@source.path)        
+        append    = options.collect{ |k, v| "#{k}=#{v}" }.sort.join('_')
+        File.basename(@source.path, extension) + (append.blank? ? '' : "#{settings[:separator]}#{append}") + extension
       end
   
       # The full path and filename to this Derivative.

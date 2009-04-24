@@ -1,43 +1,103 @@
 require File.dirname(__FILE__) + '/../test_helper'
 
 class AttachmentTest < ActiveSupport::TestCase
-  context "setting options" do
-    class FooRootImage < Image
-      is_image :storage_options => { :root => '/foo' }
+  context "being included into a model" do
+    class NotAnAttachment < ActiveRecord::Base
     end
     
-    class BarRootImage < Image
-      is_image :storage_options => { :root => '/bar' }
+    context "NotAnAttachment" do
+      should "not have milton_options" do
+        assert !NotAnAttachment.respond_to?(:milton_options)
+      end
+      
+      should "not have attachment methods" do
+        assert !NotAnAttachment.respond_to?(:has_attachment_methods)
+      end
     end
     
-    should "not overwrite FooRootImage's root setting with BarRootImage's" do
-      assert_equal '/foo', FooRootImage.milton_options[:storage_options][:root]
-    end
-
-    should "not overwrite BarRootImage's root setting with FooRootImage's" do
-      assert_equal '/bar', BarRootImage.milton_options[:storage_options][:root]
+    context "Attachment" do    
+      should "have milton_options on Attachment" do
+        assert Attachment.respond_to?(:milton_options)
+      end
+      
+      should "have attachment methods" do
+        assert Attachment.respond_to?(:has_attachment_methods)
+      end
+      
+      should "have a hash of options" do
+        assert Attachment.milton_options.is_a?(Hash)
+      end
     end
   end
   
-  context "inheriting options" do
-    class FooImage < Image
-      is_image :resizeable => { :sizes => { :foo => { :size => '10x10' } } }
+  context "setting options" do
+    context "defaults" do
+      should "use :disk as default storage" do
+        assert_equal :disk, Attachment.milton_options[:storage]
+      end
+    end
+
+    context "inheritence" do
+      class FooImage < Image
+        is_attachment :resizeable => { :sizes => { :foo => { :size => '10x10' } } }
+      end
+
+      class BarImage < FooImage # note that BarImage < FooImage < Image
+        is_attachment :resizeable => { :sizes => { } }
+      end
+
+      should "inherit settings from Image" do
+        assert_equal Image.milton_options[:storage_options][:root], FooImage.milton_options[:storage_options][:root]
+      end
+
+      should "overwrite settings from Image when redefined in FooImage" do
+        assert_equal({ :foo => { :size => '10x10' } }, FooImage.milton_options[:resizeable][:sizes])
+      end
+
+      should "overwrite settings from FooImage when redefined in BarImage" do
+        assert_equal({}, BarImage.milton_options[:resizeable][:sizes])
+      end
     end
     
-    class BarImage < FooImage
-      is_image :resizeable => { :sizes => { } }
+    context "encapsulation" do
+      class FooRootImage < Image
+        is_attachment :storage_options => { :root => '/foo' }
+      end
+    
+      class BarRootImage < Image
+        is_attachment :storage_options => { :root => '/bar' }
+      end
+    
+      should "not overwrite FooRootImage's root setting with BarRootImage's" do
+        assert_equal '/foo', FooRootImage.milton_options[:storage_options][:root]
+      end
+
+      should "not overwrite BarRootImage's root setting with FooRootImage's" do
+        assert_equal '/bar', BarRootImage.milton_options[:storage_options][:root]
+      end
+    end
+  end
+  
+  context "getting mime-type" do
+    setup do
+      @attachment = Attachment.new :file => upload('milton.jpg')
     end
     
-    should "inherit settings from Image" do
-      assert_equal Image.milton_options[:storage_options][:root], FooImage.milton_options[:storage_options][:root]
+    context "from freshly uploaded file" do
+      should "recognize it as an image/jpg" do
+        assert_equal 'image/jpg', @attachment.content_type
+      end
     end
     
-    should "overwrite settings from Image when redefined in FooImage" do
-      assert_equal({ :foo => { :size => '10x10' } }, FooImage.milton_options[:resizeable][:sizes])
-    end
-    
-    should "overwrite settings from FooImage when redefined in BarImage" do
-      assert_equal({}, BarImage.milton_options[:resizeable][:sizes])
+    context "from existing file" do
+      setup do
+        @attachment.save
+        @attachment.reload
+      end
+      
+      should "recognize it as an image/jpg" do
+        assert_equal 'image/jpg', @attachment.content_type
+      end
     end
   end
   
@@ -46,33 +106,35 @@ class AttachmentTest < ActiveSupport::TestCase
     FileUtils.ln_s 'exists', File.join(output_path, 'linked')
     raise "Failed to symlink #{File.join(output_path, 'linked')}" unless File.symlink?(File.join(output_path, 'linked'))
     
+    class NoRootAttachment < Attachment
+      is_attachment :storage_options => { :root => File.join(output_path, 'nonexistant') }
+    end
+    
+    class RootExistsAttachment < Attachment
+      is_attachment :storage_options => { :root => File.join(output_path, 'exists') }
+    end
+    
+    class SymlinkAttachment < Attachment
+      is_attachment :storage_options => { :root => File.join(output_path, 'linked') }
+    end
+    
     should "create root path when root path does not exist" do    
-      Attachment.class_eval("is_uploadable :storage_options => { :root => '#{File.join(output_path, 'nonexistant')}' }")
-      @attachment = Attachment.create :file => upload('milton.jpg')
-      
+      @attachment = NoRootAttachment.create :file => upload('milton.jpg')
       assert File.exists?(@attachment.path)
       assert File.exists?(File.join(output_path, 'nonexistant'))
       assert_match /nonexistant/, @attachment.path
     end
     
     should "work when root path already exists" do
-      Attachment.class_eval("is_uploadable :storage_options => { :root => '#{File.join(output_path, 'exists')}' }")
-      @attachment = Attachment.create :file => upload('milton.jpg')
-      
+      @attachment = RootExistsAttachment.create :file => upload('milton.jpg')
       assert File.exists?(@attachment.path)
       assert_match /exists/, @attachment.path
     end
     
     should "work when root path is a symlink" do
-      Attachment.class_eval("is_uploadable :storage_options => { :root => '#{File.join(output_path, 'linked')}' }")
-      @attachment = Attachment.create :file => upload('milton.jpg')
-
+      @attachment = SymlinkAttachment.create :file => upload('milton.jpg')
       assert File.exists?(@attachment.path)
       assert_match /linked/, @attachment.path
-    end
-    
-    teardown do
-      Attachment.class_eval("is_uploadable :storage_options => { :root => '#{output_path}' }")
     end
   end
   
@@ -138,5 +200,101 @@ class AttachmentTest < ActiveSupport::TestCase
       flexmock(@image, :path => '/root/foo/assets/1/milton.jpg')
       assert_equal "/assets/1/milton.jpg", @image.public_path({}, 'foo')
     end
+  end
+  
+  context "handling uploads" do    
+    context "filename column" do
+      should "raise an exception if there is no filename column" do
+        assert_raise RuntimeError do
+          class NotUploadable < ActiveRecord::Base # see schema.rb, there is a not_uploadables table
+            is_attachment
+          end
+        end
+      end
+
+      should "not raise an exception if the underlying table doesn't exist" do
+        assert_nothing_raised do
+          class NoTable < ActiveRecord::Base
+            is_attachment
+          end
+        end
+      end
+    end
+
+    context "class extensions" do
+      context "class methods" do
+        should "add before_file_saved callback" do
+          assert Attachment.respond_to?(:before_file_saved)
+        end
+
+        should "add after_file_saved callback" do
+          assert Attachment.respond_to?(:after_file_saved)
+        end
+      end
+    end
+
+    context "handling file upload" do
+      context "saving upload" do
+        setup do
+          @attachment = Attachment.new :file => upload('milton.jpg')
+        end
+
+        should "save the upload to the filesystem on save" do
+          @attachment.save
+          assert File.exists?(@attachment.path)
+        end
+
+        should "have the same filesize as original file when large enough not to be a StringIO" do
+          # FIXME: this doesn't actually upload as a StringIO, figure out how to
+          # force that
+          @attachment.save
+          assert_equal File.size(File.join(File.dirname(__FILE__), '..', 'fixtures', 'milton.jpg')), File.size(@attachment.path)
+        end
+
+        should "have the same filesize as original file when small enough to be a StringIO" do
+          assert_equal File.size(File.join(File.dirname(__FILE__), '..', 'fixtures', 'mini-milton.jpg')), File.size(Attachment.create(:file => upload('mini-milton.jpg')).path)
+        end
+      end
+
+      context "stored full filename" do
+        setup do
+          @attachment = Attachment.create! :file => upload('milton.jpg')
+        end
+
+        should "use set root" do
+          assert_match /^#{@attachment.milton_options[:storage_options][:root]}.*$/, @attachment.path
+        end
+
+        should "use uploaded filename" do
+          assert_match /^.*#{@attachment.filename}$/, @attachment.path
+        end
+      end
+
+      context "sanitizing filename" do
+        setup do
+          @attachment = Attachment.create! :file => upload('unsanitary .milton.jpg')
+        end
+
+        should "strip the space and . and replace them with -" do
+          assert_match /^.*\/unsanitary--milton.jpg$/, @attachment.path
+        end
+
+        should "exist with sanitized filename" do
+          assert File.exists?(@attachment.path)
+        end
+      end
+
+      context "saving attachment after upload" do
+        setup do
+          @attachment = Attachment.create! :file => upload('unsanitary .milton.jpg')
+        end
+
+        should "save the file again" do
+          assert_nothing_raised do
+            Attachment.find(@attachment.id).save!
+          end
+        end
+      end
+    end    
   end
 end
