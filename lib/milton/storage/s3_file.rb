@@ -9,7 +9,7 @@ module Citrusbyte
     module Storage
       class S3File < StoredFile
         def path
-          "http://#{bucket}.s3.amazonaws.com/#{key}"
+          "http://#{options[:storage_options][:bucket]}.s3.amazonaws.com/#{key}"
         end
         
         def dirname
