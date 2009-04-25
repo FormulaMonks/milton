@@ -1,6 +1,8 @@
-require File.join(File.dirname(__FILE__), 'stored_file')
-# FIXME: don't require right_aws until the user actually tries to use S3
+require 'milton/storage/stored_file'
 require 'right_aws'
+
+# TODO: Raise helpful errors on missing required options instead of letting
+# right_aws fail cryptically
 
 module Citrusbyte
   module Milton

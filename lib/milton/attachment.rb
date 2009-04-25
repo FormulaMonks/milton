@@ -42,19 +42,29 @@ module Citrusbyte
           # character will be stripped from all incoming filenames and replaced by
           # replacement
           milton_options[:separator]        ||= '.'
-          milton_options[:replacement]      ||= '-'
-          # Set to true to allow on-demand processing of derivatives. This can
-          # be rediculously slow because it requires that the existance of the
-          # derivative is checked each time it's requested -- throw in S3 and
-          # that becomes a huge lag. Reccommended only for prototyping.
-          milton_options[:postproccess]     ||= false
+          milton_options[:replacement]      ||= '-'          
           milton_options[:tempfile_path]    ||= File.join(Rails.root, "tmp", "milton")
           milton_options[:storage]          ||= :disk
           milton_options[:storage_options]  ||= {}
           milton_options[:processors]       ||= {}
           milton_options[:uploading]        ||= true
+          
+          # Set to true to allow on-demand processing of derivatives. This can
+          # be rediculously slow because it requires that the existance of the
+          # derivative is checked each time it's requested -- throw in S3 and
+          # that becomes a huge lag. Reccommended only for prototyping.
+          milton_options[:postproccess]     ||= false
+          
+          # TODO: Write about recipes
+          #   * They're refered to by name in #path
+          #   * They're an order of derivations to make against this attachment
+          #   * They run in the order defined
+          #   * They are created and run when the AR model is created
+          #   * They're necessary when +:postprocessing+ is turned off
           milton_options[:recipes]          ||= {}
-
+          
+          # TODO: Write about storage options
+          #   * Late binding (so right_aws is only req'd if you use S3)
           if milton_options[:storage] == :disk
             require 'milton/storage/disk_file'
             # root of where the underlying files are stored (or will be stored)
@@ -134,10 +144,20 @@ module Citrusbyte
         
         protected
         
+        # Meant to be used as an after_create filter -- loops over all the
+        # recipes and processes them to create the derivatives.
         def create_derivatives
           milton_options[:recipes].each{ |name, recipe| process(name, true) } if milton_options[:recipes].any?
         end
         
+        # Process the given options to produce a final derivative. +options+
+        # takes a Hash of options to process or the name of a pre-defined
+        # recipe which will be looked up and processed.
+        # 
+        # Pass +force = true+ to force processing regardless of if 
+        # +:postprocessing+ is turned on or not.
+        # 
+        # Returns the final Derivative of all processors in the recipe.
         def process(options, force=false)
           options = milton_options[:recipes][options] unless options.is_a?(Hash)
 
@@ -152,6 +172,16 @@ module Citrusbyte
         # Returns true if derivaties of the attachment should be processed,
         # returns false if no processing should be done when a derivative is
         # requested.
+        # 
+        # No processing also means the derivative won't be checked for
+        # existance (since that can be slow) so w/o postprocessing things will
+        # be much faster but #path will happily return the paths to Derivatives
+        # which don't exist.
+        # 
+        # It is highly recommended that you turn +:postprocessing+ off for
+        # anything but prototyping, and instead use recipes and refer to them
+        # via #path. +:postprocessing+ relies on checking for existance which
+        # will kill any real application.
         def process?
           self.class.milton_options[:postprocessing]
         end

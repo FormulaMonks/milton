@@ -15,7 +15,7 @@ class ResizingTest < ActiveSupport::TestCase
       end
       
       should "recognize options from :foo recipe" do
-        assert_equal 'milton.crop=true_size=50x50.jpg', File.basename(@image.path(:foo))
+        assert_equal 'milton.crop_size=50x50.jpg', File.basename(@image.path(:foo))
       end
       
       should "create :foo thumbnail" do

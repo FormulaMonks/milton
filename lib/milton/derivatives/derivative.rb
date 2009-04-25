@@ -19,7 +19,7 @@ module Citrusbyte
         def options_from(string)
           Hash[*(string.split('_').collect { |option| 
             key, value = option.split('=')
-            [ key.to_sym, value ]
+            [ key.to_sym, value || true ] # nothing on RHS of = means it's a boolean true
           }).flatten]
         end
 
@@ -60,8 +60,10 @@ module Citrusbyte
   
       # The resulting filename of this Derivative with embedded options.
       def filename
-        extension = File.extname(@source.path)        
-        append    = options.collect{ |k, v| "#{k}=#{v}" }.sort.join('_')
+        # ignore false booleans and don't output =true for true booleans,
+        # otherwise just k=v
+        append    = options.reject{ |k, v| v.is_a?(FalseClass) }.collect { |k, v| v === true ? k.to_s : "#{k}=#{v}" }.sort.join('_')
+        extension = File.extname(@source.path)
         File.basename(@source.path, extension) + (append.blank? ? '' : "#{settings[:separator]}#{append}") + extension
       end
   

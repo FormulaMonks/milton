@@ -26,17 +26,25 @@ module Citrusbyte::Milton
         should "coalesce size into filename" do
           assert_equal 'milton.size=40x40.jpg', File.basename(Derivative.new(@@file, { :size => '40x40' }, @@options).path)
         end
-
-        should "coalesce crop into filename" do
-          assert_equal 'milton.crop=true_size=40x40.jpg', File.basename(Derivative.new(@@file, { :size => '40x40', :crop => true }, @@options).path)
+        
+        should "not output boolean false options" do
+          assert_equal 'milton.jpg', File.basename(Derivative.new(@@file, { :crop => false }, @@options).path)
+        end
+        
+        should "remove value (=true) from boolean true options" do
+          assert_equal 'milton.crop.jpg', File.basename(Derivative.new(@@file, { :crop => true }, @@options).path)
         end
 
         should "coalesce gravity into filename" do
           assert_equal 'milton.gravity=north_size=40x40.jpg', File.basename(Derivative.new(@@file, { :size => '40x40', :gravity => 'north' }, @@options).path)
         end
 
+        should "coalesce crop into filename" do
+          assert_equal 'milton.crop_size=40x40.jpg', File.basename(Derivative.new(@@file, { :size => '40x40', :crop => true }, @@options).path)
+        end
+
         should "coalese all options together" do
-          assert_equal 'milton.crop=true_gravity=north_size=40x40.jpg', File.basename(Derivative.new(@@file, { :size => '40x40', :gravity => 'north', :crop => true }, @@options).path)
+          assert_equal 'milton.crop_gravity=north_size=40x40.jpg', File.basename(Derivative.new(@@file, { :size => '40x40', :gravity => 'north', :crop => true }, @@options).path)
         end
       end
 
@@ -45,8 +53,16 @@ module Citrusbyte::Milton
           assert_equal 'milton.size=40x40.jpg', File.basename(Derivative.new(@@file, 'size=40x40', @@options).path)
         end
 
-        should "parse crop" do
-          assert_equal 'milton.crop=true_size=40x40.jpg', File.basename(Derivative.new(@@file, 'size=40x40_crop=true', @@options).path)
+        should "parse boolean true option" do
+          assert_equal 'milton.crop.jpg', File.basename(Derivative.new(@@file, 'crop', @@options).path)
+        end
+
+        should "parse crop before size" do
+          assert_equal 'milton.crop_size=40x40.jpg', File.basename(Derivative.new(@@file, 'crop_size=40x40', @@options).path)
+        end
+
+        should "parse crop after size" do
+          assert_equal 'milton.crop_size=40x40.jpg', File.basename(Derivative.new(@@file, 'size=40x40_crop', @@options).path)
         end
 
         should "parse gravity" do
