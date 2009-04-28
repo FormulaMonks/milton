@@ -46,6 +46,11 @@ module Citrusbyte
           Milton.log "destroying path #{dirname}"
           FileUtils.rm_rf dirname if File.exists?(dirname)
         end
+        
+        # Returns the mime type of the file.
+        def mime_type
+          Milton.syscall("file -Ib #{path}").gsub(/\n/,"")
+        end
 
         protected
 

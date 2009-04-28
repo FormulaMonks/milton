@@ -115,7 +115,7 @@ module Citrusbyte
         # hasn't been determined yet or is not saved to the database
         def content_type
           return self[:content_type] unless self[:content_type].blank?
-          self.content_type = file_reference.mime_type? if file_reference.respond_to?(:mime_type?)
+          self.content_type = attached_file.mime_type
         end
         
         # Sets the content type to the given type

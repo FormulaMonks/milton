@@ -99,6 +99,18 @@ class AttachmentTest < ActiveSupport::TestCase
         assert_equal 'image/jpg', @attachment.content_type
       end
     end
+    
+    context "from file with no content_type set" do
+      setup do
+        @attachment.update_attribute(:content_type, nil)
+        @attachment.save
+        @attachment.reload
+      end
+      
+      should "attempt to determine mime_type from file" do
+        assert_equal 'image/jpeg', @attachment.content_type
+      end
+    end
   end
   
   context "creating attachment folder" do

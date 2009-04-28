@@ -30,6 +30,10 @@ module Citrusbyte
           bucket.key(key).try(:delete)
         end
         
+        def mime_type
+          # TODO: implement
+        end
+        
         protected
 
         def key
