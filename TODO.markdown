@@ -9,3 +9,5 @@ TODO
 * Add rake task for re-processing derivatives
 * Fix missing column raises when installing plugin and migrating changes to underlying table
 * Don't require right_aws unless you use S3
+* Break out storing from processing of derivatives, process all then store
+* Write tests to verify atomicity of saving/processing (cleanup on failure, etc...)
