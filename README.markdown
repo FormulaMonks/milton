@@ -20,25 +20,26 @@ Getting Started
 ---------------
 
 You can get started with Milton with the default settings by simply calling
-`is_attachment` in your Asset model (or Attachment model, or whatever else 
-you want to call it) and then setting the file attribute on your model to the
-uploaded file.
+`is_attachment` on your ActiveRecord model you'll be handling files with. It is
+expected that your underlying table will have a `filename` (string) column. If 
+you'd like you can also define `content_type` (string) and `size` (integer)
+columns to have that info automatically stored as well.
 
 ### Example
 
-Your `Asset` model:
+An `Asset` model:
 
     class Asset < ActiveRecord::Base
-      is_uploadable
+      is_attachment
     end
-
-**Note:** your underlying table (in this case `assets`) must have a string column called `filename`.
 
 Your new `Asset` form:
 
     - form_for Asset.new, :html => { :enctype => 'multipart/form-data' } do |f|
       = f.file_field :file
       = f.submit 'Upload'
+
+**Note:** don't forget to add `:html => { :enctype => 'multipart/form-data' }`
 
 Your `AssetsController`:
 
@@ -51,42 +52,18 @@ Your `AssetsController`:
 Resizing Images
 ---------------
 
-Milton creates resized versions of images on demand, as opposed to 
-attachment_fu and Paperclip which create the resized versions when the
-source file is uploaded. The resized versions are created with a consistent
-filename and saved to the file system, so they will only be created the first
-time they are asked for.
-
-Currently Milton relies on ImageMagick (but not RMagick!). Once you
-have ImageMagick installed, just add `is_resizeable` to your model in
-order to allow for image manipulation.
+Currently Milton relies on ImageMagick (but not RMagick!). Once you have 
+ImageMagick installed, add the `:thumbnail` processor to your configuration
+and define your processing recipes:
 
     class Image < ActiveRecord::Base
-      is_uploadable
-      is_resizeable
+      is_attachment :processors => [ :thumbnail ], :recipes => { :thumb => { :thumbnail => { :size => '100x100', :crop => true } } }
     end
-    
-**Note:** there is also a helper `is_image` which can be used to specify both
-`is_uploadable` and `is_resizeable`
-
-    class Image < ActiveRecord::Base
-      is_image
-    end
-
-Once your model has `is_resizeable` you can pass an options hash to the
-`#path` method to define how you want your resized version. The path to
-the resized version will be returned (and if no version has been created
-w/ the given options it will be created).
-
-### Example
 
     @image.path => .../000/000/000/001/milton.jpg
+    @image.path(:thumb) => .../000/000/000/001/milton.crop_size-100x100.jpg
 
-    @image.path(:size => '50x50') => .../000/000/000/001/milton.size_50x50.jpg
-
-    @image.path(:size => '50x50', :crop => true) => .../000/000/000/001/milton.size-50x50_crop-true.jpg
-
-### Resizing Options
+### Thumbnail Options
 
 **Note:** currently the only options supported are `:size` and `:crop`.
 
@@ -103,7 +80,7 @@ can use `:crop` for forced zoom/cropping).
 Then you can throw in `:crop` to get zoom/cropping functionality:
 
     @image.path(:size => '50x50', :crop => true)
-    
+
 This will create a 50px x 50px version of the image regardless of the source
 aspect-ratio. It will *not* distort the source image, rather it will resize the
 image as close to fitting as possible without distorting, then crop off the
@@ -122,44 +99,128 @@ path from your `/public` folder up for embedding your images. For
 now there is a helper method that gets attached to your model called
 `#public_path` that simply gives you the path from `public` on.
 
-    @asset.public_path(:size => '50x50') => '/assets/000/000/001/234/milton.jpg'
+    @image.public_path => '/assets/000/000/001/234/milton.jpg'
 
 As opposed to:
 
-    @asset.path(:size => '50x50') => '/var/www/site/public/assets/000/000/001/234/milton.jpg'
+    @image.path(:thumb) => '/var/www/site/public/assets/000/000/001/234/milton.jpg'
 
 **Note:** if you use the `:file_system_path` option to upload your files to
 somewhere outside of your `public` folder this will no longer work. You can
 pass a different folder to `public_path` to use as an alternate base.
 
-    @asset.public_path(:size => '50x50', 'uploads')
+    @image.public_path(:thumb, 'uploads')
 
-Options
--------
-A few options can be passed to the `is_uploadable`/`is_resizeable` calls in your models.
+Processors
+----------
 
-<dl>
-  <dt><code>:separator</code> (default <code>'.'</code>)</dt>
-  <dd>is the character used to separate the options from the filename in cached derivative files (i.e. resized images). It will be stripped from the filename of any incoming file.</dd>
+Processors are registered with Milton with the `:processors` option (just means 
+requiring a file). They can then be used in recipes which are run when a file 
+is uploaded in order to create derivatives of the file -- in the above case,
+thumbnails.
 
-  <dt><code>:replacement</code> (default <code>'-'</code>)</dt>
-  <dd>is the character used to replace <code>:separator</code> after stripping it from the incoming filename.</dd>
+In the above example we're telling Milton to load the thumbnail processor
+(which comes with Milton) and then telling it to pass
+`{ :size => '100x100', :crop => true }` to the thumbnail processor in order to
+create a derivative called `:thumb` for all uploaded Images.
 
-  <dt><code>:file_system_path</code> (default <code>&lt;RAILS_ROOT&gt;/public/&lt;table name&gt;</code>)</dt>
-  <dd>is the root path to where files are/will be stored on your file system. The partitioned portion of the path is then added onto this root to generate the full path. You can do some useful stuff with this like pulling your assets out of /public if you want them to be non-web-accessible.</dd>
+More processors can be loaded and combined into the recipe, to be run in the
+order specified, i.e.:
 
-  <dt><code>:chmod</code> (default <code>0755</code>)</dt>
-  <dd>is the mode to set on on created folders and uploaded files.</dd>
+    class Image < ActiveRecord::Base
+      is_attachment :processors => [ :thumbnail, :watermark ], :recipes => { 
+        :watermarked_thumb => { :watermark => 'Milton', :thumbnail => { :size => '100x100', :crop => true } } 
+      }
+    end
 
-  <dt><code>:tempfile_path</code> (default <code>&lt;RAILS_ROOT&gt;/tmp/milton</code>)</dt>
-  <dd>is the path used for Milton's temporary storage (will be created if it doesn't already exist).</dd>
-</dl>
+This recipe would create a watermarked version of the originally uploaded file,
+then create a 100x100, cropped thumbnail of the watermarked version.
 
-**Note:** If you're using Capistrano for deployment remember to put `:file_system_path` path in `shared` and link it up on deploy so you don't lose your uploads between deployments!
+When processors would create the same derivative they use the already created
+derivative and do not recreate it, so if you had:
 
-### Example
+    class Image < ActiveRecord::Base
+      is_attachment :processors => [ :thumbnail, :watermark ], :recipes => { 
+        :thumb => { :watermark => 'Milton', :thumbnail => { :size => '100x100', :crop => true } } 
+        :small => { :watermark => 'Milton', :thumbnail => { :size => '250x' } }
+      }
+    end
 
-    is_uplodable :chmod => 700, :file_system_path => File.join(Rails.root, 'uploads')
+The watermarking would only be done once and both thumbnails would be created
+from the same watermarked version of the original image.
+
+**Note:** There is no `:watermark` processor, just an example of how processors
+can be combined.
+
+Post-processing
+---------------
+
+Post-processing allows you to create derivatives by running processors on
+demand instead of when the file is uploaded. This is particularly useful for
+prototyping or early-on in development when processing options are changing
+rapidly and you want to play with results immediately.
+
+You can pass `:postprocessing => true` to `is_attachment` in order to turn on
+post-processing of files. This is recommended only for prototyping as it works
+by checking the existence of the requested derivative every time the derivative
+is requested to determine if it should be processed or not. With disk storage
+in development this can be quite fast, but when using S3 or in production mode
+it is definitely not recommended.
+
+Post-processing allows you to pass recipes to `path`, i.e.:
+
+    @image.path(:thumbnail => { :size => '100x100', :crop => true })
+    
+If the particular derivative (size of 100x100 and cropped) doesn't exist it
+will be created.
+
+**Note:** Without post-processing turned on the call to `path` above would
+still return the same path, it just wouldn't create the underlying file.
+
+Amazon S3
+---------
+
+Milton comes with support for Amazon S3. When using S3 uploads and derivatives
+are stored locally in temp files then sent to S3. To use S3 you need to pass a
+few options to `is_attachment`:
+
+    class Asset < ActiveRecord::Base
+      is_attachment :storage => :s3, :storage_options => { :api_access_key => '123', :secret_access_key => '456', :bucket => 'assets' }
+    end
+    
+Where `:api_access_key` and `:secret_access_key` are your API access key and
+secret access key from your Amazon AWS account and `:bucket` is the S3 bucket
+you would like your files to be stored in.
+
+When using S3 files are stored in folders according to the associated model's
+ID. So in the above example the URL to a stored file might be:
+
+    @image.path => http://assets.amazonaws.com/1/milton.jpg
+
+Storage Options
+---------------
+
+By default Milton uses your local disk for storing files. Additional storage
+methods can be used by passing the `:storage` option to `is_attachment` (as in
+the S3 example above). Milton comes included with `:s3` and `:disk` storage.
+
+Disk Storage Options
+--------------------
+
+When using disk storage (default) the following options can be passed in
+`:storage_options`:
+
+* `:root` (default `<Rails.root>/public/<table name>`) -- is the root path to where files are/will be stored on your file system. The partitioned portion of the path is then added onto this root to generate the full path. You can do some useful stuff with this like pulling your assets out of /public if you want them to be non-web-accessible.
+* `:chmod` (default `0755`) -- is the mode to set on on created folders and uploaded files.
+
+**Note:** If you're using Capistrano for deployment with disk storage remember to put your `:root` path in `shared` and link it up on deploy so you don't lose your uploads between deployments!
+
+General Options
+---------------
+
+* `:separator` (default `'.'`) -- is the character used to separate the options from the filename in cached derivative files (i.e. resized images). It will be stripped from the filename of any incoming file.
+* `:replacement` (default `'-'`) -- is the character used to replace `:separator` after stripping it from the incoming filename.
+`:tempfile_path` (default `<Rails.root>/tmp/milton`) -- is the path used for Milton's temporary storage.
 
 Installation
 ------------
