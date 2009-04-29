@@ -65,24 +65,20 @@ module Citrusbyte
           
           # TODO: Write about storage options
           #   * Late binding (so right_aws is only req'd if you use S3)
+          Milton.try_require "milton/storage/#{milton_options[:storage]}_file", "No '#{milton_options[:storage]}' storage found for Milton"
+
+          # TODO: initialize these options in DiskFile
           if milton_options[:storage] == :disk
-            require 'milton/storage/disk_file'
             # root of where the underlying files are stored (or will be stored)
             # on the file system
             milton_options[:storage_options][:root]  ||= File.join(Rails.root, "public", table_name)
             milton_options[:storage_options][:root]    = File.expand_path(milton_options[:storage_options][:root])
             # mode to set on stored files and created directories
             milton_options[:storage_options][:chmod] ||= 0755
-          else
-            require 'milton/storage/s3_file'
           end
           
           milton_options[:processors].each do |processor, options|
-            begin
-              require "milton/derivatives/#{processor}"                 
-            rescue LoadError => e
-              raise LoadError.new("No '#{processor}' processor found for Milton")
-            end
+            Milton.try_require "milton/derivatives/#{processor}", "No '#{processor}' processor found for Milton"
           end
           
           validates_presence_of :filename

@@ -108,6 +108,7 @@ class AttachmentTest < ActiveSupport::TestCase
       end
       
       should "attempt to determine mime_type from file" do
+        # this is implemented w/ unix file cmd so is system dependent currently...
         assert_equal 'image/jpeg', @attachment.content_type
       end
     end
@@ -307,6 +308,22 @@ class AttachmentTest < ActiveSupport::TestCase
           end
         end
       end
-    end    
+    end
+  end
+  
+  context "updating an existing attachment" do
+    setup do
+      @attachment = Attachment.create! :file => upload('milton.jpg')
+      @original_path = @attachment.path
+      @attachment.update_attributes! :file => upload('big-milton.jpg')
+    end
+    
+    should "store the path to the updated upload" do
+      assert_equal 'big-milton.jpg', File.basename(@attachment.path)
+    end
+    
+    should "save the updated upload" do
+      assert File.exists?(@attachment.path)
+    end
   end
 end

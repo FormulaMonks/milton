@@ -78,6 +78,19 @@ module Citrusbyte
       $?.success? ? stdout : (log("failed to execute #{command}", invoker) and return false)
     end
     module_function :syscall
+    
+    # Wraps +require+ on the given path in a rescue which uses the given
+    # message for the resulting LoadError on failure instead of the default
+    # one to give the user a better idea of what happened (useful for
+    # dynamic +require+)
+    def try_require(path, message)
+      begin
+        require path
+      rescue LoadError => e
+        raise LoadError.new(message + " (failed to require #{path})")
+      end
+    end
+    module_function :try_require
   end
 end
 

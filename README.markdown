@@ -1,34 +1,28 @@
 Milton
 ======
 
-Milton is an upload-handling plugin for Rails that tries to make as few
-assumptions as possible while providing a lot of functionality.
+Milton is an upload and attachment handling plugin for Rails. It is built for
+extensibility and has support for resizing images and Amazon S3 built in.
 
 Description
 -----------
 
-Milton is an upload-handling plugin that assumes little and is highly
-extensible. Many similar plugins make assumptions about the type of
-things you'll be uploading and require some hacking when you want to do
-something like upload images with thumbnails as well as PDFs with previews.
-Milton attempts to solve this by assuming nothing about what you'll be
-uploading and giving you, at the very least, a plugin for dealing with
-an underlying file-system.
+Milton is an upload handling plugin for Rails. The main goals of Milton are:
 
-You can then tack on extra functionality, like handling uploaded files
-(`is_uploadable`), or resizing images (`is_resizeable`) to certain types
-of assets.
+* Extensibility: by allowing easy addition of processors for various types of
+uploads and extra storage options.
+* Flexibility: by assuming as little as possible about what
+types of things you'll be uploading.
+* Simplicity: by trying to keep the code base small and avoiding reflection, 
+mixins, and reopening classes as much as possible.
 
-Milton is built to be extensible by keeping pollution of your ActiveRecord
-model to a minimum, allowing you to extend Milton through a small and simple
-API rather than dealing with a giant module mixed into your classes.
+Getting Started
+---------------
 
-Handling Uploads
-----------------
-
-Handling uploads is as simple as calling `is_uploadable` in your Asset
-model (or Attachment model, or whatever else you want to call it) and
-then setting the file attribute on your model to the uploaded file.
+You can get started with Milton with the default settings by simply calling
+`is_attachment` in your Asset model (or Attachment model, or whatever else 
+you want to call it) and then setting the file attribute on your model to the
+uploaded file.
 
 ### Example
 
@@ -195,67 +189,17 @@ Dependencies
 
 * ActiveRecord
 * Ruby on Rails (for now?)
-* A filesystem (more storage solutions coming soon)
+* A filesystem (hopefully this one is covered...)
 
 For image manipulation (not required!)
 
 * ImageMagick (more processors coming soon)
 
-Extended Usage Examples
------------------------
+More
+----
 
-### Basic User Avatar
-
-    class User < ActiveRecord::Base
-      has_one :avatar, :dependent => :destroy
-    end
-  
-    class Avatar < ActiveRecord::Base
-      is_image
-      belongs_to :user
-    end
-    
-Allow user to upload an avatar when creating
-
-    class UsersController < ActiveRecord::Base
-      def create
-        @user = User.new params[:user]
-        @user.avatar = Avatar.new(params[:avatar]) if params[:avatar] && params[:avatar][:file]
-        
-        if @user.save
-          ...
-        else
-          ...
-        end
-        
-        ...
-      end
-    end
-    
-Allow user to upload a new avatar, note that we don't care about updating files
-in this has_one case, we're just gonna set a new relationship (which will
-destroy the existing one)
-
-    class AvatarsController < ActiveRecord::Base
-      def create
-        @user = User.find params[:user_id]
-
-        # setting a has_one on a saved object saves the new related object
-        if @user.avatar = Avatar.new(params[:avatar])
-          ...
-        else
-          ...
-        end
-        
-        ...
-      end
-    end
-    
-User's profile snippet (in Haml)
-    
-    #profile
-      = image_tag(@user.avatar.public_path(:size => '100x100', :crop => true))
-      = @user.name
+* [Extended Usage Examples](USAGE.markdown)
+* [Extending Milton](EXTENDING.markdown)
 
 License
 -------

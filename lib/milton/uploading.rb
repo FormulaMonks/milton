@@ -9,7 +9,7 @@ module Citrusbyte
         def setup_callbacks
           # Rails 2.1 fix for callbacks
           define_callbacks(:before_file_saved, :after_file_saved) if defined?(::ActiveSupport::Callbacks)
-          after_create :save_uploaded_file
+          after_save :save_uploaded_file
           after_file_saved :create_derivatives if @after_create_callbacks.delete(:create_derivatives)
         end
         
@@ -42,9 +42,9 @@ module Citrusbyte
         protected
         
         def save_uploaded_file
-          unless @upload.stored?
+          if @upload && !@upload.stored?
             callback :before_file_saved
-            @upload.store(id)
+            @attached_file = @upload.store(id)
             callback :after_file_saved
           end
         end
@@ -69,8 +69,9 @@ module Citrusbyte
 
       def store(id)
         return true if stored?
-        Storage::StoredFile.adapter(options[:storage]).create(filename, id, temp_path, options)
-        @stored = true
+        returning Storage::StoredFile.adapter(options[:storage]).create(filename, id, temp_path, options) do
+          @stored = true
+        end
       end
 
       protected
