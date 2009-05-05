@@ -36,7 +36,7 @@ module Citrusbyte
           @upload           = Upload.new(file, self.class.milton_options)
           self.filename     = @upload.filename
           self.size         = @upload.size if respond_to?(:size=)
-          self.content_type = @upload.content_type if respond_to?(:content_type=)
+          self.content_type = Milton::File.mime_type?(@upload) if respond_to?(:content_type=)
         end
         
         protected
