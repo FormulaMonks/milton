@@ -15,10 +15,8 @@ module Citrusbyte
         # File respond_to?(:mime_type) is true if mimetype_fu is installed, so
         # this way we always have File.mime_type? available but it favors
         # mimetype_fu's implementation.
-        unless respond_to?(:mime_type?)
-          def mime_type?(file)
-            file.content_type
-          end
+        def mime_type?(file)
+          ::File.respond_to?(:mime_type?) ? super(file.filename) : file.content_type
         end
       end
     end
