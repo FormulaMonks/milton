@@ -44,8 +44,12 @@ module Citrusbyte
           @s3 ||= RightAws::S3.new(
             options[:storage_options][:access_key_id], 
             options[:storage_options][:secret_access_key], 
-            { :protocol => options[:storage_options][:protocol], :port => 80, :logger => Rails.logger }
+            { :protocol => http? ? 'http' : 'https', :port => http? ? 80 : 443, :logger => Rails.logger }
           )
+        end
+        
+        def http?
+          options[:storage_options].has_key?(:protocol) && options[:storage_options][:protocol] == 'http'
         end
         
         def bucket
