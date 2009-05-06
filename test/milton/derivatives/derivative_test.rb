@@ -1,6 +1,5 @@
 require File.dirname(__FILE__) + '/../../test_helper'
 
-
 module Citrusbyte::Milton
   class DerivativeTest < ActiveSupport::TestCase
     @@options ||= { :storage_options => { :root => output_path }, :separator => '.' }

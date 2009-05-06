@@ -17,28 +17,36 @@ $: << File.expand_path(File.dirname(__FILE__) + '/..')
 
 load(File.dirname(__FILE__) + '/schema.rb')
 
-def output_path
-  File.join(File.dirname(__FILE__), 'output')
-end
-
 class ActiveSupport::TestCase
   self.use_transactional_fixtures = true
   self.use_instantiated_fixtures = false
   ActiveSupport::TestCase.fixture_path = File.join(File.dirname(__FILE__), 'fixtures/')
+
+  @@output_path = File.expand_path(File.join(File.dirname(__FILE__), 'output'))
+  cattr_reader :output_path  
+  def output_path;ActiveSupport::TestCase.output_path;end;
   
   # remove files created from previous test run, happens before instead of
   # after so you can view them after you run the tests
   FileUtils.rm_rf(output_path)
+  
+  def upload(file, type='image/jpg')
+    ActionController::TestUploadedFile.new(ActionController::TestCase.fixture_path + file, type)
+  end
 end
 
-def upload(file, type='image/jpg')
-  ActionController::TestUploadedFile.new(ActionController::TestCase.fixture_path + file, type)
+module ActiveSupport::Testing::Declarative
+  def pending_test(name, &block)
+    test(name) do
+      puts "\nPENDING: #{name} (in #{eval('"#{__FILE__}:#{__LINE__}"', block.binding)})"
+    end
+  end
 end
 
 class Attachment < ActiveRecord::Base
-  is_attachment :storage_options => { :root => output_path }
+  is_attachment :storage_options => { :root => ActiveSupport::TestCase.output_path }
 end
 
 class Image < ActiveRecord::Base
-  is_attachment :storage_options => { :root => output_path }, :processors => { :thumbnail => { :postprocessing => true } }
+  is_attachment :storage_options => { :root => ActiveSupport::TestCase.output_path }, :processors => { :thumbnail => { :postprocessing => true } }
 end

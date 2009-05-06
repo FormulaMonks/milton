@@ -120,15 +120,15 @@ class AttachmentTest < ActiveSupport::TestCase
     raise "Failed to symlink #{File.join(output_path, 'linked')}" unless File.symlink?(File.join(output_path, 'linked'))
     
     class NoRootAttachment < Attachment
-      is_attachment :storage_options => { :root => File.join(output_path, 'nonexistant') }
+      is_attachment :storage_options => { :root => File.join(ActiveSupport::TestCase.output_path, 'nonexistant') }
     end
     
     class RootExistsAttachment < Attachment
-      is_attachment :storage_options => { :root => File.join(output_path, 'exists') }
+      is_attachment :storage_options => { :root => File.join(ActiveSupport::TestCase.output_path, 'exists') }
     end
     
     class SymlinkAttachment < Attachment
-      is_attachment :storage_options => { :root => File.join(output_path, 'linked') }
+      is_attachment :storage_options => { :root => File.join(ActiveSupport::TestCase.output_path, 'linked') }
     end
     
     should "create root path when root path does not exist" do    

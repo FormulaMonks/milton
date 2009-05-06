@@ -4,7 +4,7 @@ class ResizingTest < ActiveSupport::TestCase
   context "processing thumbnails on create" do
     context "with recipes" do
       class ImageWithRecipes < Image
-        is_attachment :storage_options => { :root => output_path }, :processors => [ :thumbnail ], :recipes => {
+        is_attachment :storage_options => { :root => ActiveSupport::TestCase.output_path }, :processors => [ :thumbnail ], :recipes => {
           :foo => { :thumbnail => { :size => '50x50', :crop => true } },
           :bar => { :thumbnail => { :size => '10x10' } },
         }
@@ -43,7 +43,7 @@ class ResizingTest < ActiveSupport::TestCase
     
     context "with postprocessing" do
       class ImageWithPostprocessing < Image
-        is_attachment :storage_options => { :root => output_path }, :postprocessing => true
+        is_attachment :storage_options => { :root => ActiveSupport::TestCase.output_path }, :postprocessing => true
       end
       
       setup do

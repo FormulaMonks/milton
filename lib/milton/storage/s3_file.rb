@@ -21,8 +21,8 @@ module Citrusbyte
         end
         
         def store(source)
-          Milton.log "storing #{source} to #{path}"
-          bucket.put(key, File.open(source), {}, 'public-read')
+          Milton.log "storing #{source} to #{path} (#{options[:storage_options][:permissions]})"
+          bucket.put(key, File.open(source), {}, options[:storage_options][:permissions])
         end
         
         def destroy
@@ -44,12 +44,12 @@ module Citrusbyte
           @s3 ||= RightAws::S3.new(
             options[:storage_options][:access_key_id], 
             options[:storage_options][:secret_access_key], 
-            { :protocol => 'http', :port => 80, :logger => Rails.logger }
+            { :protocol => options[:storage_options][:protocol], :port => 80, :logger => Rails.logger }
           )
         end
         
         def bucket
-          @bucket ||= s3.bucket(options[:storage_options][:bucket], true, 'public-read')
+          @bucket ||= s3.bucket(options[:storage_options][:bucket], true, options[:storage_options][:permissions])
         end
       end
     end
