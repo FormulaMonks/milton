@@ -1,5 +1,10 @@
 require 'milton/storage/stored_file'
 require 'right_aws'
+# these are required to generate HMAC:SHA1 signature for retrieving private
+# files from S3
+require 'base64'
+require 'openssl'
+require 'digest/sha1'
 
 # TODO: Raise helpful errors on missing required options instead of letting
 # right_aws fail cryptically
@@ -32,6 +37,31 @@ module Citrusbyte
         
         def mime_type
           # TODO: implement
+        end        
+
+        # Generates a signed url to this resource on S3.
+        # 
+        # See doc for +signature+.
+        def signed_url(expires_at=nil)
+          "#{path}?AWSAccessKeyId=#{options[:storage_options][:access_key_id]}" +
+          (expires_at ? "&Expires=#{expires_at.to_i}" : '') +
+          "&Signature=#{signature(expires_at)}"
+        end
+        
+        # Generates a signature for passing authorization for this file on to
+        # another user without having to proxy the file.
+        # 
+        # See http://docs.amazonwebservices.com/AmazonS3/latest/index.html?RESTAuthentication.html
+        # 
+        # Optionally pass +expires_at+ to make the signature valid only until
+        # given expiration date/time -- useful for temporary secure access to
+        # files.
+        def signature(expires_at=nil)
+          CGI.escape(Base64.encode64(OpenSSL::HMAC.digest(
+            OpenSSL::Digest::Digest.new('sha1'),
+            options[:storage_options][:secret_access_key],
+            "GET\n\n\n#{expires_at ? expires_at.to_i : ''}\n/#{options[:storage_options][:bucket]}/#{key}"
+          )).chomp.gsub(/\n/, ''))
         end
         
         protected
