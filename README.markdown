@@ -262,6 +262,11 @@ More
 * [Extended Usage Examples](USAGE.markdown)
 * [Extending Milton](EXTENDING.markdown)
 
+Contributors
+------------
+
+Milton is based on AttachmentPow by Ari Lerner (auser)
+
 License
 -------
 
