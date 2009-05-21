@@ -257,6 +257,11 @@ User's profile snippet (in Haml)
       = image_tag(@user.avatar.public_path(:size => '100x100', :crop => true))
       = @user.name
 
+Contributors
+------------
+
+Milton is based on AttachmentPow by Ari Lerner (auser)
+
 License
 -------
 
