@@ -58,7 +58,7 @@ Resizing Images
 ---------------
 
 Milton creates resized versions of images on demand, as opposed to 
-attachment_fu and Paperclip which create the resized versions when the
+`attachment_fu` and `Paperclip` which create the resized versions when the
 source file is uploaded. The resized versions are created with a consistent
 filename and saved to the file system, so they will only be created the first
 time they are asked for.
@@ -233,7 +233,7 @@ Allow user to upload an avatar when creating
     end
     
 Allow user to upload a new avatar, note that we don't care about updating files
-in this has_one case, we're just gonna set a new relationship (which will
+in this `has_one` case, we're just gonna set a new relationship (which will
 destroy the existing one)
 
     class AvatarsController < ActiveRecord::Base
