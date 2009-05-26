@@ -83,7 +83,7 @@ module Citrusbyte
           
           validates_presence_of :filename
           
-          before_destroy :destroy_attached_file
+          after_destroy :destroy_attached_file
           after_create :create_derivatives
 
           include Citrusbyte::Milton::Attachment::InstanceMethods
