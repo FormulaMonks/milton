@@ -241,13 +241,12 @@ You will also need to install ImageMagick to use image resizing.
 Dependencies
 ------------
 
-* ActiveRecord
-* Ruby on Rails (for now?)
+* Ruby on Rails w/ ActiveRecord
 * A filesystem (hopefully this one is covered...)
-
-For image manipulation (not required!)
-
-* ImageMagick (more processors coming soon)
+* ImageMagick (only if using :thumbnail processor)
+* mimetype-fu (not required, but if available will be used to recognized mime
+  types of incoming files)
+* right_aws (if using S3 storage option)
 
 Migrating
 ---------
