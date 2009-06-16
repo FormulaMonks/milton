@@ -1,49 +1,88 @@
-require File.join(File.dirname(__FILE__), 'stored_file')
+require 'milton/storage/stored_file'
 require 'right_aws'
+# these are required to generate HMAC:SHA1 signature for retrieving private
+# files from S3
+require 'base64'
+require 'openssl'
+require 'digest/sha1'
 
-module Citrusbyte
-  module Milton
-    module Storage
-      class S3File < StoredFile
-        def path
-          "http://#{bucket}.s3.amazonaws.com/#{key}"
-        end
-        
-        def dirname
-          id
-        end
+# TODO: Raise helpful errors on missing required options instead of letting
+# right_aws fail cryptically
 
-        def exists?
-          bucket.key(key).exists?
-        end
-        
-        def store(source)
-          Milton.log "S3File", "storing #{source} to #{path}"
-          bucket.put(key, File.open(source), {}, 'public-read')
-        end
-        
-        def destroy
-          Milton.log "S3File", "destroying #{path}"
-          bucket.key(key).try(:delete)
-        end
-        
-        protected
+module Milton
+  module Storage
+    class S3File < StoredFile
+      def path
+        "http://#{options[:storage_options][:bucket]}.s3.amazonaws.com/#{key}"
+      end
+      
+      def dirname
+        id
+      end
 
-        def key
-          "#{dirname}/#{filename}"
-        end
+      def exists?
+        bucket.key(key).exists?
+      end
+      
+      def store(source)
+        Milton.log "storing #{source} to #{path} (#{options[:storage_options][:permissions]})"
+        bucket.put(key, File.open(source), {}, options[:storage_options][:permissions])
+      end
+      
+      def destroy
+        Milton.log "destroying #{path}"
+        bucket.key(key).try(:delete)
+      end
+      
+      def mime_type
+        # TODO: implement
+      end        
 
-        def s3
-          @s3 ||= RightAws::S3.new(
-            options[:storage_options][:access_key_id], 
-            options[:storage_options][:secret_access_key], 
-            { :protocol => 'http', :port => 80, :logger => Rails.logger }
-          )
-        end
-        
-        def bucket
-          @bucket ||= s3.bucket(options[:storage_options][:bucket], true, 'public-read')
-        end
+      # Generates a signed url to this resource on S3.
+      # 
+      # See doc for +signature+.
+      def signed_url(expires_at=nil)
+        "#{path}?AWSAccessKeyId=#{options[:storage_options][:access_key_id]}" +
+        (expires_at ? "&Expires=#{expires_at.to_i}" : '') +
+        "&Signature=#{signature(expires_at)}"
+      end
+      
+      # Generates a signature for passing authorization for this file on to
+      # another user without having to proxy the file.
+      # 
+      # See http://docs.amazonwebservices.com/AmazonS3/latest/index.html?RESTAuthentication.html
+      # 
+      # Optionally pass +expires_at+ to make the signature valid only until
+      # given expiration date/time -- useful for temporary secure access to
+      # files.
+      def signature(expires_at=nil)
+        CGI.escape(Base64.encode64(OpenSSL::HMAC.digest(
+          OpenSSL::Digest::Digest.new('sha1'),
+          options[:storage_options][:secret_access_key],
+          "GET\n\n\n#{expires_at ? expires_at.to_i : ''}\n/#{options[:storage_options][:bucket]}/#{key}"
+        )).chomp.gsub(/\n/, ''))
+      end
+      
+      protected
+
+      def key
+        "#{dirname}/#{filename}"
+      end
+
+      def s3
+        @s3 ||= RightAws::S3.new(
+          options[:storage_options][:access_key_id], 
+          options[:storage_options][:secret_access_key], 
+          { :protocol => http? ? 'http' : 'https', :port => http? ? 80 : 443, :logger => Rails.logger }
+        )
+      end
+      
+      def http?
+        options[:storage_options].has_key?(:protocol) && options[:storage_options][:protocol] == 'http'
+      end
+      
+      def bucket
+        @bucket ||= s3.bucket(options[:storage_options][:bucket], true, options[:storage_options][:permissions])
       end
     end
   end
