@@ -4,10 +4,14 @@ class ResizingTest < ActiveSupport::TestCase
   context "processing thumbnails on create" do
     context "with recipes" do
       class ImageWithRecipes < Image
-        is_attachment :storage_options => { :root => ActiveSupport::TestCase.output_path }, :processors => [ :thumbnail ], :recipes => {
-          :foo => { :thumbnail => { :size => '50x50', :crop => true } },
-          :bar => { :thumbnail => { :size => '10x10' } },
-        }
+        is_attachment(
+          :storage_options => { :root => ActiveSupport::TestCase.output_path },
+          :recipes => {
+            :foo => [{ :thumbnail => { :size => '50x50', :crop => true } }],
+            :bar => [{ :thumbnail => { :size => '10x10' } }],
+            :baz => [{ :thumbnail => { :size => '50x50' } }, { :thumbnail => { :size => '25x25', :crop => true } }],
+          }
+        )
       end
       
       setup do
@@ -24,6 +28,10 @@ class ResizingTest < ActiveSupport::TestCase
       
       should "create :bar thumbnail" do
         assert File.exists?(@image.path(:bar))
+      end
+      
+      should "run :baz recipes in order" do
+        assert_equal 'milton.size=50x50.crop_size=25x25.jpg', File.basename(@image.path(:baz))
       end
     end
         

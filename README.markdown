@@ -7,14 +7,11 @@ extensibility and has support for resizing images and Amazon S3 built in.
 Description
 -----------
 
-Milton is an upload handling plugin for Rails. The main goals of Milton are:
-
-* Extensibility: by allowing easy addition of processors for various types of
-uploads and extra storage options.
-* Flexibility: by assuming as little as possible about what
-types of things you'll be uploading.
-* Simplicity: by trying to keep the code base small and avoiding reflection, 
-mixins, and reopening classes as much as possible.
+Milton is an upload handling plugin for Rails. It is meant to handle multiple
+types of file uploads. It includes support for thumbnailing of image uploads,
+and more processors can easily be added for handling other file types. It also
+supports multiple file stores including disk storage and Amazon S3. Milton also
+supports on-demand file processing for prototyping.
 
 Getting Started
 ---------------
@@ -57,7 +54,7 @@ ImageMagick installed, add the `:thumbnail` processor to your configuration
 and define your processing recipes:
 
     class Image < ActiveRecord::Base
-      is_attachment :processors => [ :thumbnail ], :recipes => { :thumb => { :thumbnail => { :size => '100x100', :crop => true } } }
+      is_attachment :recipes => { :thumb => [{ :thumbnail => { :size => '100x100', :crop => true } }] }
     end
 
     @image.path => .../000/000/000/001/milton.jpg
@@ -79,7 +76,7 @@ can use `:crop` for forced zoom/cropping).
 
 Then you can throw in `:crop` to get zoom/cropping functionality:
 
-    @image.path(:size => '50x50', :crop => true)
+    @image.path(:thumbnail => { :size => '50x50', :crop => true })
 
 This will create a 50px x 50px version of the image regardless of the source
 aspect-ratio. It will *not* distort the source image, rather it will resize the
@@ -114,22 +111,18 @@ pass a different folder to `public_path` to use as an alternate base.
 Processors
 ----------
 
-Processors are registered with Milton with the `:processors` option (just means 
-requiring a file). They can then be used in recipes which are run when a file 
-is uploaded in order to create derivatives of the file -- in the above case,
-thumbnails.
-
-In the above example we're telling Milton to load the thumbnail processor
-(which comes with Milton) and then telling it to pass
+Processors are defined in recipes and are loaded when Milton is loaded. In the
+above example we're telling Milton to load the thumbnail processor (which comes
+with Milton) and then telling it to pass
 `{ :size => '100x100', :crop => true }` to the thumbnail processor in order to
 create a derivative called `:thumb` for all uploaded Images.
 
 More processors can be loaded and combined into the recipe, to be run in the
-order specified, i.e.:
+order specified (hence the array syntax), i.e.:
 
     class Image < ActiveRecord::Base
-      is_attachment :processors => [ :thumbnail, :watermark ], :recipes => { 
-        :watermarked_thumb => { :watermark => 'Milton', :thumbnail => { :size => '100x100', :crop => true } } 
+      is_attachment :recipes => {
+        :watermarked_thumb => [{ :watermark => 'Milton' }, { :thumbnail => { :size => '100x100', :crop => true } }]
       }
     end
 
@@ -141,8 +134,8 @@ derivative and do not recreate it, so if you had:
 
     class Image < ActiveRecord::Base
       is_attachment :processors => [ :thumbnail, :watermark ], :recipes => { 
-        :thumb => { :watermark => 'Milton', :thumbnail => { :size => '100x100', :crop => true } } 
-        :small => { :watermark => 'Milton', :thumbnail => { :size => '250x' } }
+        :thumb => [{ :watermark => 'Milton' }, { :thumbnail => { :size => '100x100', :crop => true } }],
+        :small => [{ :watermark => 'Milton' }, { :thumbnail => { :size => '250x' } }]
       }
     end
 
@@ -256,16 +249,69 @@ For image manipulation (not required!)
 
 * ImageMagick (more processors coming soon)
 
-More
-----
+Extended Usage Examples
+-----------------------
 
-* [Extended Usage Examples](USAGE.markdown)
-* [Extending Milton](EXTENDING.markdown)
+### Basic User Avatar
+
+    class User < ActiveRecord::Base
+      has_one :avatar, :dependent => :destroy
+    end
+  
+    class Avatar < ActiveRecord::Base
+      is_image
+      belongs_to :user
+    end
+    
+Allow user to upload an avatar when creating
+
+    class UsersController < ActiveRecord::Base
+      def create
+        @user = User.new params[:user]
+        @user.avatar = Avatar.new(params[:avatar]) if params[:avatar] && params[:avatar][:file]
+        
+        if @user.save
+          ...
+        else
+          ...
+        end
+        
+        ...
+      end
+    end
+    
+Allow user to upload a new avatar, note that we don't care about updating files
+in this has_one case, we're just gonna set a new relationship (which will
+destroy the existing one)
+
+    class AvatarsController < ActiveRecord::Base
+      def create
+        @user = User.find params[:user_id]
+
+        # setting a has_one on a saved object saves the new related object
+        if @user.avatar = Avatar.new(params[:avatar])
+          ...
+        else
+          ...
+        end
+        
+        ...
+      end
+    end
+    
+User's profile snippet (in Haml)
+    
+    #profile
+      = image_tag(@user.avatar.public_path(:size => '100x100', :crop => true))
+      = @user.name
 
 Contributors
 ------------
 
-Milton is based on AttachmentPow by Ari Lerner (auser)
+* Upload and file handling based on AttachmentPow by Ari Lerner (auser)
+* Cropping and thumbnailing calculations based on code by Nicolás Sanguinetti (foca)
+* Damian Janowski (djanowski)
+* Michel Martens (soveran)
 
 License
 -------

@@ -62,7 +62,13 @@ module Citrusbyte
           #   * They are created and run when the AR model is created
           #   * They're necessary when +:postprocessing+ is turned off
           milton_options[:recipes]          ||= {}
-          
+          milton_options[:recipes].each do |name, steps|
+            steps = [steps] unless steps.is_a?(Array)
+            steps.each do |step|
+              step.each { |processor, options| Milton.try_require "milton/derivatives/#{processor}", "No '#{processor}' processor found for Milton" }
+            end
+          end
+
           # TODO: Write about storage options
           #   * Late binding (so right_aws is only req'd if you use S3)
           Milton.try_require "milton/storage/#{milton_options[:storage]}_file", "No '#{milton_options[:storage]}' storage found for Milton"
@@ -76,11 +82,7 @@ module Citrusbyte
             # mode to set on stored files and created directories
             milton_options[:storage_options][:chmod] ||= 0755
           end
-          
-          milton_options[:processors].each do |processor, options|
-            Milton.try_require "milton/derivatives/#{processor}", "No '#{processor}' processor found for Milton"
-          end
-          
+                    
           validates_presence_of :filename
           
           after_destroy :destroy_attached_file
@@ -156,11 +158,13 @@ module Citrusbyte
         # Returns the final Derivative of all processors in the recipe.
         def process(options, force=false)
           options = milton_options[:recipes][options] unless options.is_a?(Hash)
-
+          options = [options] unless options.is_a?(Array)
+          
           source = attached_file
-          options.each do |processor, opts|
-            raise "Don't know how to #{processor}, did you initialize it in #{self.class} is_attachment :processors?" unless self.class.milton_options[:processors].include?(processor)
-            source = Derivative.factory(processor, source, opts, self.class.milton_options).process_if(process? || force).file
+          options.each do |recipe|
+            recipe.each do |processor, opts|
+              source = Derivative.factory(processor, source, opts, self.class.milton_options).process_if(process? || force).file
+            end
           end
           source
         end

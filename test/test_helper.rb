@@ -50,3 +50,78 @@ end
 class Image < ActiveRecord::Base
   is_attachment :storage_options => { :root => ActiveSupport::TestCase.output_path }, :processors => { :thumbnail => { :postprocessing => true } }
 end
+
+require 'right_aws'
+
+# this fakes S3 and makes it write to the file-system so we can check results
+module RightAws
+  ROOT = File.join(ActiveSupport::TestCase.output_path, 's3') unless defined?(ROOT)
+  
+  class S3
+    def buckets
+      Dir.glob(ROOT + '/*').collect do |bucket|
+        Bucket.new(self, File.basename(bucket), Time.now, Owner.new(1, 'owner'))
+      end
+    end
+    
+    class Key
+      def put(data=nil, perms=nil, headers={})
+        Rails.logger.info "Putting to fake S3 store: #{filename}"
+        FileUtils.mkdir_p(File.join(ROOT, @bucket.name, File.dirname(@name)))
+        File.open(filename, "w") { |f| f.write(data) }
+      end
+      
+      def delete
+        Rails.logger.info "Deleting from fake S3 store: #{filename}"        
+        FileUtils.rm(filename)
+      end
+      
+      def exists?
+        File.exists?(filename)
+      end
+      
+      private
+      
+      def filename
+        File.join(File.join(ROOT, @bucket.name), @name)
+      end
+    end
+    
+    class Bucket
+      def key(key_name, head=false)
+        Key.new(self, key_name, nil, {}, {}, Time.now, Time.now.to_s, 100, '', Owner.new(1, 'owner'))
+      end
+    end
+    
+    class Grantee
+      def apply
+        true
+      end
+    end
+  end
+
+  class S3Interface < RightAwsBase
+    def create_bucket(bucket, headers={})
+      FileUtils.mkdir_p(File.join(ROOT, bucket))
+    end
+  end
+end
+
+class S3File
+  class << self
+    def path(url)
+      url.scan /http:\/\/(.*)\.s3.amazonaws.com\/(.*)\/(.*)/
+      File.join(RightAws::ROOT, $1, $2, $3)
+    end
+    
+    def exists?(url)
+      File.exist?(path(url))
+    end
+  end
+end
+
+class Net::HTTP
+  def connect
+    raise "Trying to hit the interwebz!!!"
+  end
+end
