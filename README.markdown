@@ -220,13 +220,13 @@ Installation
 
 ### Gem
 
-    $ gem install citrusbyte-milton --source http://gems.github.com
+    $ gem install milton
 
 ###  Ruby on Rails gem plugin:
 
 Add to your environment.rb:
 
-    config.gem "citrusbyte-milton", :source => "http://gems.github.com", :lib => "milton"
+    config.gem "milton"
 
 Then run:
     
@@ -318,14 +318,10 @@ User's profile snippet (in Haml)
 Contributors
 ------------
 
-<<<<<<< HEAD:README.markdown
-Milton is based on AttachmentPow by Ari Lerner (auser)
-=======
 * Upload and file handling based on AttachmentPow by Ari Lerner (auser)
 * Cropping and thumbnailing calculations based on code by Nicolás Sanguinetti (foca)
 * Damian Janowski (djanowski)
 * Michel Martens (soveran)
->>>>>>> s3:README.markdown
 
 License
 -------
