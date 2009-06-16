@@ -1,6 +1,6 @@
 require File.dirname(__FILE__) + '/../../test_helper'
 
-module Citrusbyte::Milton
+module Milton
   class ThumbnailTest < ActiveSupport::TestCase
     @@options ||= { 
       :storage_options => { :root => output_path, :chmod => 0755 }, 
@@ -29,7 +29,7 @@ module Citrusbyte::Milton
       context "and checking errors" do
         should "raise a MissingFileError if source file does not exist" do
           @source.destroy
-          assert_raise Citrusbyte::Milton::MissingFileError do
+          assert_raise Milton::MissingFileError do
             Thumbnail.process(@source, { :size => '50x50' }, @@options)
           end
         end

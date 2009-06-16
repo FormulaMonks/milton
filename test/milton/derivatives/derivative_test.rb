@@ -1,9 +1,9 @@
 require File.dirname(__FILE__) + '/../../test_helper'
 
-module Citrusbyte::Milton
+module Milton
   class DerivativeTest < ActiveSupport::TestCase
     @@options ||= { :storage_options => { :root => output_path }, :separator => '.' }
-    @@file ||= Citrusbyte::Milton::Storage::DiskFile.new('milton.jpg', 1, @@options)
+    @@file ||= Milton::Storage::DiskFile.new('milton.jpg', 1, @@options)
     
     # TODO: move to disk_file_test
     context "path partitioning" do
@@ -16,7 +16,7 @@ module Citrusbyte::Milton
       end
       
       should "partition path based on id" do
-        assert_equal "#{output_path}/000/123/456/789/milton.jpg", Citrusbyte::Milton::Storage::DiskFile.new('milton.jpg', 123456789, @@options).path
+        assert_equal "#{output_path}/000/123/456/789/milton.jpg", Milton::Storage::DiskFile.new('milton.jpg', 123456789, @@options).path
       end
     end
         
