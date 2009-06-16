@@ -249,6 +249,17 @@ For image manipulation (not required!)
 
 * ImageMagick (more processors coming soon)
 
+Migrating
+---------
+
+### From 0.2.4
+
+Milton is initialized with only `is_attachment` as of 0.3.0, so 
+`is_resizeable`, `is_uploadable`, etc... are no longer used.
+
+`:postprocessing` is off by default and should only be used in development now.
+Recipes should be used instead of post-processing -- see Processors above.
+
 Extended Usage Examples
 -----------------------
 
@@ -259,7 +270,7 @@ Extended Usage Examples
     end
   
     class Avatar < ActiveRecord::Base
-      is_image
+      is_attachment :recipes => { :small => [{ :thumbnail => { :size => '100x100', :crop => true } }] }
       belongs_to :user
     end
     
@@ -302,7 +313,7 @@ destroy the existing one)
 User's profile snippet (in Haml)
     
     #profile
-      = image_tag(@user.avatar.public_path(:size => '100x100', :crop => true))
+      = image_tag(@user.avatar.public_path(:small))
       = @user.name
 
 Contributors
