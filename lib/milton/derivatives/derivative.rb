@@ -41,7 +41,18 @@ module Milton
       end
       
       def factory(type, source, options={}, settings={})
-        "Milton::#{type.to_s.classify}".constantize.new(source, options, settings)
+        begin
+          klass = "Milton::#{type.to_s.classify}".constantize
+        rescue NameError
+          begin
+            require "milton/derivatives/#{type.to_s}"
+          rescue MissingSourceFile => e
+            raise MissingSourceFile.new("#{e.message} (milton: couldn't find the processor '#{type}' you were trying to load)", e.path)
+          end
+          klass = "Milton::#{type.to_s.classify}".constantize
+        end
+        
+        klass.new(source, options, settings)
       end
     end
 

@@ -19,7 +19,7 @@ module Milton
         assert_equal "#{output_path}/000/123/456/789/milton.jpg", Milton::Storage::DiskFile.new('milton.jpg', 123456789, @@options).path
       end
     end
-        
+    
     context "building the filename from options" do
       context "options as hash" do
         should "coalesce size into filename" do
@@ -71,6 +71,24 @@ module Milton
         should "parse them all together" do
           assert_equal 'milton.crop=true_gravity=north_size=40x40.jpg', File.basename(Derivative.new(@@file, 'size=40x40_crop=true_gravity=north', @@options).path)
         end
+      end
+    end
+    
+    context "factory" do
+      should "attempt to require the processor requested by the factory if the constant is not defined" do
+        assert_nothing_raised do
+          Derivative.factory(:thumbnail, @@file, { :size => '40x40' }, @@options)
+        end
+      end
+      
+      should "raise MissingSourceFile error if processor could not be found" do
+        assert_raise MissingSourceFile do
+          Derivative.factory(:foo, @@file, { }, @@options)
+        end
+      end
+      
+      should "return derivative for given processor" do
+        assert_equal 'Milton::Thumbnail', Derivative.factory(:thumbnail, @@file, { :size => '40x40' }, @@options).class.to_s
       end
     end
   end

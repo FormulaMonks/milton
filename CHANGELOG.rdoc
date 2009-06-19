@@ -1,3 +1,20 @@
+== 0.3.2, released 2009-06-18
+
+* Processors attempt to load at runtime if undefined, fixing post-processing
+  when no recipes are defined with the desired processor
+
+== 0.3.1, released 2009-06-16
+
+* Minor bugfix for release
+
+== 0.3.0, released 2009-06-16
+
+* Full refactor
+* More easily extendable processors
+* Multiple storage options, more easily extendable, comes with Amazon S3
+* Switched to context for testing
+* API changes (see Migrating in README)
+
 == 0.2.4, released 2009-02-16
 
 * Got rid of symlink_aware_mkdir_p as it wasn't actually needed, problem was
