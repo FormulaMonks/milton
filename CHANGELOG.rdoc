@@ -1,3 +1,11 @@
+== 0.3.4, released 2009-06-18
+
+* Milton makes a local copy of the source file before identifying as an image
+* Added S3 helper for local testing of S3 functionality to help each further
+  testing of S3 offline
+* Temporarily removed Thumbnail optimization of creating mid-sized file for
+  multiple thumbnail generation (to be re-implemented later)
+
 == 0.3.3, released 2009-06-18
 
 * Milton makes a local copy of the source file before processing now to allow

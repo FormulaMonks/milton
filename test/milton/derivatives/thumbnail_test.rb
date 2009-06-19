@@ -28,8 +28,8 @@ module Milton
       end
 
       context "and checking errors" do
-        should "raise a MissingFileError if source file does not exist" do
-          @source.destroy
+        should "raise a MissingFileError if source cannot be recognized as an image" do
+          File.open(@source.path, 'w') { |io| io.puts 'foo' }
           assert_raise Milton::MissingFileError do
             Thumbnail.process(@source, { :size => '50x50' }, @@options)
           end
@@ -89,13 +89,26 @@ module Milton
         @thumbnail = Thumbnail.process(@source, { :crop => true, :size => '40x40' }, @@options)
       end
 
-      should "generate a 640px wide version when image is wider than 640px wide and generating an image smaller than 640px wide" do
+      pending_test "generate a 640px wide version when image is wider than 640px wide and generating an image smaller than 640px wide" do
         assert File.exists?(@thumbnail.path.gsub(/\.crop=true_size=40x40/, '.size=640x'))
       end
 
-      should "generate images smaller than 640px wide from the existing 640px one" do
+      pending_test "generate images smaller than 640px wide from the existing 640px one" do
         # TODO: how can i test this?
         # @thumbnail.path(:crop => true, :size => '40x40')
+      end
+    end
+    
+    context "using S3" do
+      setup do
+        @source = Storage::S3File.create('milton.jpg', 1, File.join(fixture_path, 'milton.jpg'), @@options.merge(:storage_options => {
+          :access_key_id => '123', :secret_access_key => 'abc', :bucket => 'milton'
+        }))
+        @thumbnail = Thumbnail.process(@source, { :size => '50x50' }, @@options)
+      end
+      
+      should "generate thumbnail" do
+        assert S3File.exists?(@thumbnail.path)
       end
     end
   end

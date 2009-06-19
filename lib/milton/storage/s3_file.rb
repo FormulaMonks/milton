@@ -44,7 +44,7 @@ module Milton
 
         # stream the download as opposed to downloading the whole thing and reading
         # it all into memory at once since it might be gigantic...
-        s3.get(bucket_name, key) { |chunk| file.write(chunk) }
+        s3.get(options[:storage_options][:bucket], key) { |chunk| file.write(chunk) }
         file.close
       end
 

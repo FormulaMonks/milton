@@ -23,7 +23,7 @@ class ActiveSupport::TestCase
   ActiveSupport::TestCase.fixture_path = File.join(File.dirname(__FILE__), 'fixtures/')
 
   @@output_path = File.expand_path(File.join(File.dirname(__FILE__), 'output'))
-  cattr_reader :output_path  
+  cattr_reader :output_path
   def output_path;ActiveSupport::TestCase.output_path;end;
   
   # remove files created from previous test run, happens before instead of
@@ -58,5 +58,21 @@ end
 class Net::HTTP
   def connect
     raise "Trying to hit the interwebz!!!"
+  end
+end
+
+S3_ROOT = File.join(ActiveSupport::TestCase.output_path, 's3') 
+require File.join(File.dirname(__FILE__), 's3_helper')
+
+class S3File
+  class << self
+    def path(url)
+      url.scan /http:\/\/(.*)\.s3.amazonaws.com\/(.*)\/(.*)/
+      File.join(S3_ROOT, $1, $2, $3)
+    end
+    
+    def exists?(url)
+      File.exist?(path(url))
+    end
   end
 end

@@ -3,7 +3,7 @@ Gem::Specification.new do |s|
   s.rubyforge_project = 'milton'
   s.summary           = "Rails file and upload handling plugin built for extensibility. Supports Amazon S3 and resizes images."
   s.description       = "Rails file and upload handling plugin built for extensibility. Supports Amazon S3 and resizes images."
-  s.version           = '0.3.3'
+  s.version           = '0.3.4'
   s.date              = %q{2009-06-16}
   s.author            = "Ben Alavi"
   s.email             = "ben.alavi@citrusbyte.com"
@@ -32,6 +32,7 @@ Gem::Specification.new do |s|
 		'test/milton/attachment_test.rb',
 		'test/milton/milton_test.rb',
 		'test/milton/resizing_test.rb',
+		'test/s3_helper.rb',
 		'test/schema.rb',
 		'test/test_helper.rb'
   ]
