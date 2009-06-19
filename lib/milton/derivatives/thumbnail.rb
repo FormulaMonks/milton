@@ -6,25 +6,21 @@ module Milton
     def process
       raise "target size must be specified for resizing" unless options.has_key?(:size)
 
-      destination = Milton::Tempfile.path(settings[:tempfile_path], Milton::File.extension(@source.filename))
-    
-      # TODO: determine if this is neccessary or was just a problem w/ the
-      # way we were calling convert
-      # convert can be destructive to the original image in certain failure
-      # cases, so copy it to a tempfile first before processing
-      # source      = Milton::Tempfile.create(self.source, @source.options[:tempfile_path]).path
-    
+      temp_dst = File.join(settings[:tempfile_path], Milton::Tempfile.from(source.filename))
+      temp_src = File.join(settings[:tempfile_path], Milton::Tempfile.from(source.filename))
+      
+      source.copy(temp_src)
+      
       if options[:crop]
         crop = CropCalculator.new(image, Image.from_geometry(options[:size]))
         size = crop.resizing_geometry
         conversion_options = %Q(-gravity #{crop.gravity} -crop #{crop.cropping_geometry})
       end
-    
-      # TODO: raise if the syscall fails
-      Milton.syscall(%Q{convert #{source} -geometry #{size || options[:size]} #{conversion_options || ''} +repage "#{destination}"}) 
+      
+      Milton.syscall!(%Q{convert #{temp_src} -geometry #{size || options[:size]} #{conversion_options || ''} +repage "#{temp_dst}"})
     
       # TODO: raise if the store fails
-      file.store(destination)
+      file.store(temp_dst)
     end
 
     protected
@@ -33,10 +29,13 @@ module Milton
     # 640-wide version of the image (so you're not generating tiny
     # thumbnails from an 8-megapixel upload)
     def source
-      image.width > 640 && Image.from_geometry(options[:size]).width < 640 ? 
-        Thumbnail.process(@source, { :size => '640x' }, settings).path : @source.path
+      @quick_source ||= if image.width > 640 && Image.from_geometry(options[:size]).width < 640
+        Thumbnail.process(@source, { :size => '640x' }, settings).file
+      else
+        @source
+      end
     end
-  
+    
     # Returns and memoizes an Image initialized from the file we're making a
     # thumbnail of
     def image

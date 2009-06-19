@@ -5,6 +5,7 @@ require 'milton/core/file'
 module Milton
   # Raised when a file which was expected to exist appears not to exist
   class MissingFileError < StandardError;end;
+  class SyscallFailedError < RuntimeError;end;
 
   # Some definitions for file semantics used throughout Milton, understanding
   # this will make understanding the code a bit easier and avoid ambiguity:
@@ -72,11 +73,25 @@ module Milton
   # Redirects stderr to log/milton.stderr.log in order to examine causes of
   # failure.
   def syscall(command)
-    log("executing #{command}", invoker = Milton.called_by)
-    stdout = %x{#{command} 2>>#{File.join(Rails.root, 'log', 'milton.stderr.log')}}
-    $?.success? ? stdout : (log("failed to execute #{command}", invoker) and return false)
+    begin
+      syscall!(command)
+    rescue Milton::SyscallFailedError => e      
+      return false
+    end
   end
   module_function :syscall
+  
+  def syscall!(command)
+    log("executing #{command}", invoker = Milton.called_by)
+    stdout = %x{#{command} 2>>#{File.join(Rails.root, 'log', 'milton.stderr.log')}}
+    unless $?.success?
+      e = Milton::SyscallFailedError.new(command)
+      log("failed to execute " + e.message, invoker)
+      raise e
+    end
+    stdout
+  end
+  module_function :syscall!
   
   # Wraps +require+ on the given path in a rescue which uses the given
   # message for the resulting LoadError on failure instead of the default

@@ -1,4 +1,5 @@
 require File.dirname(__FILE__) + '/../../test_helper'
+require 'milton/derivatives/thumbnail'
 
 module Milton
   class ThumbnailTest < ActiveSupport::TestCase
@@ -38,9 +39,9 @@ module Milton
           assert_raise RuntimeError do
             Thumbnail.process(@source, { :crop => true }, @@options)
           end
-        end
+        end        
       end
-    
+
       # 300/320   = 0.9375
       # 50*0.9375 = 47
       context "without cropping" do

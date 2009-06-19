@@ -33,6 +33,12 @@ module Milton
       def path(tempfile_path, extension)
         File.join(tempfile_path, filename(extension))
       end
+      
+      # Simple helper that returns a path to a tempfile with a uniquely
+      # generated basename and same extension as the given source.
+      def from(source)
+        filename(Milton::File.extension(source))
+      end
     end
   end
 end

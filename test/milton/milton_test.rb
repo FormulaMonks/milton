@@ -10,4 +10,12 @@ class MiltonTest < ActiveSupport::TestCase
       assert_equal "foo\n", Milton.syscall("echo foo")
     end
   end
+  
+  context "running a syscall!" do
+    should "raise a Milton::SyscallFailedError if it fails" do
+      assert_raise Milton::SyscallFailedError do
+        Milton.syscall!('ls this_directory_definitely_doesnt_exist')
+      end
+    end
+  end
 end

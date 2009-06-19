@@ -34,6 +34,20 @@ module Milton
         bucket.key(key).try(:delete)
       end
       
+      # Copies this file to the given location on disk.
+      # Note that this copies to a LOCAL location, not to another place on S3!
+      def copy(destination)
+        Milton.log "copying #{path} to #{destination}"
+
+        s3   = RightAws::S3Interface.new(options[:storage_options][:access_key_id], options[:storage_options][:secret_access_key], :logger => Rails.logger)
+        file = File.new(destination, 'wb')
+
+        # stream the download as opposed to downloading the whole thing and reading
+        # it all into memory at once since it might be gigantic...
+        s3.get(bucket_name, key) { |chunk| file.write(chunk) }
+        file.close
+      end
+
       def mime_type
         # TODO: implement
       end        

@@ -52,7 +52,7 @@ class Attachment < ActiveRecord::Base
 end
 
 class Image < ActiveRecord::Base
-  is_attachment :storage_options => { :root => ActiveSupport::TestCase.output_path }, :processors => { :thumbnail => { :postprocessing => true } }
+  is_attachment :storage_options => { :root => ActiveSupport::TestCase.output_path }
 end
 
 class Net::HTTP

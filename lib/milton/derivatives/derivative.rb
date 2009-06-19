@@ -100,7 +100,7 @@ module Milton
     # Returns the StoredFile which represents the Derivative (which is a copy
     # of the source w/ a different filename).
     def file
-      @file ||= @source.copy(filename)
+      @file ||= @source.clone(filename)
     end
   end
 end

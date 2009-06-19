@@ -1,3 +1,8 @@
+== 0.3.3, released 2009-06-18
+
+* Milton makes a local copy of the source file before processing now to allow
+  post-processing when using S3 (which probably isn't a good idea ;))
+
 == 0.3.2, released 2009-06-18
 
 * Processors attempt to load at runtime if undefined, fixing post-processing

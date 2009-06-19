@@ -46,6 +46,12 @@ module Milton
         FileUtils.rm_rf dirname if File.exists?(dirname)
       end
       
+      # Copies this file to the given location on disk.
+      def copy(destination)
+        Milton.log "copying #{path} to #{destination}"
+        FileUtils.cp(path, destination)
+      end
+      
       # Returns the mime type of the file.
       def mime_type
         Milton.syscall("file -Ib #{path}").gsub(/\n/,"")

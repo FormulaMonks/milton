@@ -35,11 +35,10 @@ module Milton
         self.options  = options
       end
       
-      # Creates a "copy" of this StoredFile of the same type with the same id
+      # Creates a clone of this StoredFile of the same type with the same id
       # and options but using the given filename. Doesn't actually do any
-      # copying of the underlying file data, just creates a "copy" of the 
-      # StoredFile object.
-      def copy(filename)
+      # copying of the underlying file data.
+      def clone(filename)
         self.class.new(filename, self.id, self.options)
       end
     end
