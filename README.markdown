@@ -220,13 +220,13 @@ Installation
 
 ### Gem
 
-    $ gem install milton
+    $ gem install citrusbyte-milton --source=http://gems.github.com
 
 ###  Ruby on Rails gem plugin:
 
 Add to your environment.rb:
 
-    config.gem "milton"
+    config.gem "citrusbyte-milton", :lib => 'milton', :source => 'http://gems.github.com'
 
 Then run:
     
