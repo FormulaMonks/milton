@@ -32,8 +32,20 @@ class AttachmentTest < ActiveSupport::TestCase
   
   context "setting options" do
     context "defaults" do
+      class DefaultAttachment < ActiveRecord::Base
+        is_attachment
+      end
+      
       should "use :disk as default storage" do
         assert_equal :disk, Attachment.milton_options[:storage]
+      end
+      
+      should "use #{Rails.root}/public/default_attachments as default disk storage root" do
+        assert_equal File.join(Rails.root, 'public', 'default_attachments'), DefaultAttachment.milton_options[:storage_options][:root]
+      end
+      
+      should "use 0755 as default mode for new disk files" do
+        assert_equal 0755, DefaultAttachment.milton_options[:storage_options][:chmod]
       end
     end
 
