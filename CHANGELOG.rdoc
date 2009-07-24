@@ -1,3 +1,9 @@
+== 0.3.5, released 2009-07-24
+
+* Fixed bug where wrapping load error on missing storage engine masks any
+  underlying load errors (i.e. if you load s3_file and missing right_aws it
+  would give you a error on s3_file)
+
 == 0.3.4, released 2009-06-18
 
 * Milton makes a local copy of the source file before identifying as an image

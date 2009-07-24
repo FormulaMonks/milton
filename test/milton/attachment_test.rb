@@ -35,7 +35,7 @@ class AttachmentTest < ActiveSupport::TestCase
       class DefaultAttachment < ActiveRecord::Base
         is_attachment
       end
-      
+            
       should "use :disk as default storage" do
         assert_equal :disk, Attachment.milton_options[:storage]
       end
@@ -46,6 +46,24 @@ class AttachmentTest < ActiveSupport::TestCase
       
       should "use 0755 as default mode for new disk files" do
         assert_equal 0755, DefaultAttachment.milton_options[:storage_options][:chmod]
+      end
+
+      should "raise LoadError if storage engine could not be required" do
+        assert_raise LoadError do
+          class BadStorageAttachment < ActiveRecord::Base
+            is_attachment :storage => :foo
+          end
+        end
+      end
+      
+      should "raise helpful LoadError if storage engine could not be required" do
+        begin
+          class BadStorageAttachment < ActiveRecord::Base
+            is_attachment :storage => :foo
+          end
+        rescue LoadError => e
+          assert_equal "No 'foo' storage found for Milton (failed to require milton/storage/foo_file)", e.message
+        end
       end
     end
 

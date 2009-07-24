@@ -101,7 +101,8 @@ module Milton
     begin
       require path
     rescue LoadError => e
-      raise LoadError.new(message + " (failed to require #{path})")
+      raise LoadError.new(message + " (failed to require #{path})") if e.message =~ Regexp.new(path)
+      raise e
     end
   end
   module_function :try_require

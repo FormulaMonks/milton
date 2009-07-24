@@ -167,7 +167,7 @@ module Milton
         end
         source
       end
-              
+      
       # Returns true if derivaties of the attachment should be processed,
       # returns false if no processing should be done when a derivative is
       # requested.
