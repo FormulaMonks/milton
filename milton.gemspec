@@ -4,7 +4,6 @@ Gem::Specification.new do |s|
   s.summary           = "Rails file and upload handling plugin built for extensibility. Supports Amazon S3 and resizes images."
   s.description       = "Rails file and upload handling plugin built for extensibility. Supports Amazon S3 and resizes images."
   s.version           = '0.3.5'
-  s.date              = %q{2009-06-16}
   s.author            = "Ben Alavi"
   s.email             = "ben.alavi@citrusbyte.com"
   s.homepage          = "http://labs.citrusbyte.com/projects/milton"
